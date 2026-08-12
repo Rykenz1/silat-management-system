@@ -124,6 +124,7 @@ void DatabaseManager::regStudent(){
         cin>>cfmPwd;
 
         if(pwd==cfmPwd){
+            pwd = cfmPwd;
             break;
         }else{
             cout<<"try again"<<endl;
@@ -135,7 +136,7 @@ void DatabaseManager::regStudent(){
 
     PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
 
-    pstmt->setString(1,getNextID("accountID","account",3));
+    pstmt->setString(1,getNextID("account",3));
     pstmt->setString(2,usr);
     pstmt->setString(3,pwd);
     pstmt->setString(4,"student");
@@ -218,35 +219,53 @@ void DatabaseManager::regParent(){
 
 }   //register parent
 
-string DatabaseManager::getNextID(string ID_column, string tableName, int digitCount){
+string DatabaseManager::getNextID(string tableName, int digitCount){
     int num=0;
     char prefix;
-    
+
+    //combine add "ID" to tablename to get columnID
+    //student+ID = studentID
+    string ID_column = tableName+"ID";
+
     string sqlStatement="select max("+ ID_column+") from "+tableName;
     Statement* stmt= con->createStatement();
-
-    // pstmt->setString(1,ID_column);
-    // pstmt->setString(2,table);
-    
 
     ResultSet* res= stmt->executeQuery(sqlStatement);
     
     string maxAcc;
     if (res->next()){
-        maxAcc = res->getString(1); //get the result of first column
-    }
-    // cout<<maxAcc<<endl;
 
-    prefix= maxAcc[0]; //get the first letter
+        if(res->isNull(1)){
+            // Assign default prefix based on table name (using if-else for std::string)
+            if (tableName == "student") {
+                prefix = 's';
+            } else if (tableName == "parent") {
+                prefix = 'p';
+            } else if (tableName == "instructor") {
+                prefix = 'i';
+            } else if (tableName == "account") {
+                prefix = 'a';
+            }
+            num = 1; // First ID starts at 1 (e.g., s001)
+        }else{
+
+            maxAcc = res->getString(1); //get the result of first column
+            prefix= maxAcc[0]; //get the first letter
     
-    //substring extract number, stoi convert string to int
-    num=stoi(maxAcc.substr(1))+1;
-
+            //substring extract number, stoi convert string to int
+            num=stoi(maxAcc.substr(1))+1;
+        }
+        
+    }
+    
     ostringstream oss;
     //combine prefix and number
     oss << prefix << setfill('0') << setw(digitCount) << num;
     
-    string nextID = oss.str(); // "a002"
+    string nextID = oss.str(); // combine prefix and value "a002"
+
+    delete res;
+    delete stmt;
 
     return nextID;
 }

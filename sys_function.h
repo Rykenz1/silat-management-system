@@ -18,6 +18,8 @@ using namespace sql;
 class DatabaseManager{
 private:
     Connection* con; // Connection stored once as a class attribute
+    string currentUser; //account ID
+    string userRole;    //admin, instructor, parent, student
 public:
     DatabaseManager();
     ~DatabaseManager();
@@ -28,7 +30,7 @@ public:
     void regAcc();      //register menu
     void regStudent();  //register student
     void regParent();   //register parent
-    string getNextID(string ID_column, string tableName,int digitCount); //find biggest account id, and increment by 1
+    string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
 };
 
 

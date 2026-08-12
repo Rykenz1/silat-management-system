@@ -49,7 +49,7 @@ int main()
                 break;
                 
             case '3':
-                cout<<dbm.getNextID("accountID", "account",3)<<endl;
+                cout<<dbm.getNextID("instructor",3)<<endl;
                 break;
 
             case '0':

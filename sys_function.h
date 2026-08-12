@@ -27,9 +27,11 @@ public:
 
     // Function Declarations
     void login();
-    void regAcc();      //register menu
+    void registration();      //register menu
+    void createAcc();  //create account
     void regStudent();  //register student
     void regParent();   //register parent
+    string getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
 };
 

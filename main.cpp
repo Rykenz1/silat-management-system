@@ -34,6 +34,7 @@ int main()
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
             cout<<"  [3] test function"<<endl;
+            cout<<"  [4] test getCurUsr"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
             cin>>choice;
@@ -45,13 +46,18 @@ int main()
                 break;
             
             case '2':
-                dbm.regAcc();
+                dbm.registration();
                 break;
                 
             case '3':
-                cout<<dbm.getNextID("instructor",3)<<endl;
+                cout<<dbm.getNextID("student",3)<<endl;
                 break;
 
+
+            case '4':
+                dbm.getCurUsr("endmin","endminpwd");
+                // cout<<"current user: "<<
+                break;
             case '0':
                 cout<<"Adios amigos :)"<<endl;
                 running=false;

@@ -75,13 +75,13 @@ void DatabaseManager::registration(){
         {
         case '1':
             cout<<"register student"<<endl;
-            regStudent();
+            regStudent(0,"NULL");
             break;
             
         
         case '2':
-            regParent();
             cout<<"register parent"<<endl;
+            regParent();
             break;
 
         case '0':
@@ -98,10 +98,30 @@ void DatabaseManager::registration(){
 }      //register menu
 
 
-void DatabaseManager::createAcc(){
+void DatabaseManager::createAcc(int option){
     string username;    
     string password;
     string cfmPwd;      //confirm password
+    string accType;
+
+    //set register account type
+    switch (option)
+        {
+        case 1:
+            accType="student";
+            break;
+
+        case 2:
+            accType="parent";
+            break;
+        
+        case 3:
+            accType="instructor";
+            break;
+        
+        default:
+            break;
+    }
 
     cout<<"enter username: ";
     cin>>username;
@@ -121,6 +141,7 @@ void DatabaseManager::createAcc(){
         }
     }
 
+    
     string sqlStatement = "insert into account(accountID,username, password,acc_type)"
         "value(?,?,?,?)";
 
@@ -129,36 +150,46 @@ void DatabaseManager::createAcc(){
     pstmt->setString(1,getNextID("account",3));
     pstmt->setString(2,username);
     pstmt->setString(3,password);
-    pstmt->setString(4,"student");
+    pstmt->setString(4,accType);
 
     ResultSet* res= pstmt->executeQuery();
+
+    getCurUsr(username,password);
 
     delete pstmt;
 }       //create account
 
 
-void DatabaseManager::regStudent(){
+void DatabaseManager::regStudent(int option,string parentID){
+    string userID;
     string fName;
     string ic;
     string homeAdd;
     string phoneNum;
     string classSlot="";
     char choice;
-
-    cout<<"=====REGISTERING AS A STUDENT====="<<endl;
     
-    createAcc();
+    //only create account if self register (option 0)
+    if (option == 0)
+    {
+        cout<<"=====REGISTERING AS A STUDENT====="<<endl;
+        createAcc(1);
+    }
     
     cin.ignore();
     cout<<"Enter full name: ";
     getline(cin, fName);
     cout<<"enter IC: ";
     getline(cin, ic);
-    cout<<"enter home address";
-    getline(cin, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin, phoneNum);
 
+    if (option==0)
+    {
+        cout<<"enter home address: ";
+        getline(cin, homeAdd);
+        cout<<"enter phone number: ";
+        getline(cin, phoneNum);
+    }
+    
     cout<<"choose class slot:"<<endl;
     cout<<"  [1] Monday"<<endl;
     cout<<"  [2] Tuesday"<<endl;
@@ -178,22 +209,37 @@ void DatabaseManager::regStudent(){
         switch (choice)
         {
         case '1':
-            classSlot = "Thursday";
+            classSlot = "s1";
             validInput=true;
             break;
         
         case '2':
-            classSlot = "Friday";
+            classSlot = "s2";
             validInput=true;
             break;
 
         case '3':
-            classSlot = "Saturday";
+            classSlot = "s3";
             validInput=true;
             break;
 
         case '4':
-            classSlot = "Sunday";
+            classSlot = "s4";
+            validInput=true;
+            break;
+
+        case '5':
+            classSlot = "s5";
+            validInput=true;
+            break;
+
+        case '6':
+            classSlot = "s6";
+            validInput=true;
+            break;
+
+        case '7':
+            classSlot = "s7";
             validInput=true;
             break;
 
@@ -202,63 +248,121 @@ void DatabaseManager::regStudent(){
             validInput=false;
             break;
         }
-        /* code */
+        
     } while (validInput==false);
     
     
 
     cin.ignore();
-    cout<<"confirm registration? y/n"<<endl;
-
+    cout<<"confirm registration? y/n: ";
+    cin>>choice;
     if(choice=='y' || choice== 'Y'){
-        string sqlStatement = "insert into student values(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, classID)"
-        "value(?,?,?,?,?,?,?,?)";
+        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, classID,parentID)"
+        "value(?,?,?,?,?,?,CURDATE(),?,?)";
 
         PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
         
-        pstmt->setString(1,getNextID("student",3));
-        pstmt->setString(2,fName);
-        pstmt->setString(3,fName);
-        pstmt->setString(4,fName);
-        pstmt->setString(5,fName);
-        pstmt->setString(6,fName);
-        pstmt->setString(7,fName);
-        pstmt->setString(8,fName);
+        userID=getNextID("student",3);
+        pstmt->setString(1,userID); //studentID
+        pstmt->setString(2,fName);  //full name
+        pstmt->setString(3,ic);     //ic
+        
+        if (option==0) //for self register student
+        {
+        
+            pstmt->setString(4,currentUser); //connect accountID
+            pstmt->setString(5,homeAdd);
+            pstmt->setString(6,phoneNum);
+            pstmt->setNull(8, DataType::VARCHAR);
 
+            
 
+        }else if(option==1){ //for parent under parent
+            pstmt->setNull(4, DataType::VARCHAR);
+            pstmt->setNull(5, DataType::VARCHAR);
+            pstmt->setNull(6, DataType::VARCHAR);
+            pstmt->setString(8,parentID);
+        }
+        pstmt->setString(7,classSlot);
 
         ResultSet* res= pstmt->executeQuery();
 
         cout<<"registration success... waiting for instructor approval"<<endl;
 
-        delete pstmt;
+        
     }else if(choice== 'n' || choice == 'N'){
         cout<<"registration cancelled"<<endl;
     }else{
         cout<<"invalid input"<<endl;
     }
 
-    cout<<"full name: "<<fName<<endl;
-    cout<<"ic: "<<ic;
-    cout<<"home addrese: "<<homeAdd<<endl;
-    cout<<"phone number: "<<phoneNum<<endl;
-    cout<<"class slot: "<<classSlot<<endl;
-
-    
-    
+    // cout<<"full name: "<<fName<<endl;
+    // cout<<"ic: "<<ic;
+    // cout<<"home addrese: "<<homeAdd<<endl;
+    // cout<<"phone number: "<<phoneNum<<endl;
+    // cout<<"class slot: "<<classSlot<<endl;
 
 }  //register student
 
 
 void DatabaseManager::regParent(){
+    string parentID;
+    string fName;
+    string ic;
+    string homeAdd;
+    string phoneNum;
+
+    cout<<"=====REGISTERING AS A PARENT====="<<endl;
+    
+    //create account
+    createAcc(2);
+
+    cin.ignore();
+    cout<<"Enter full name: ";
+    getline(cin, fName);
+    cout<<"enter IC: ";
+    getline(cin, ic);
+    cout<<"enter home address: ";
+    getline(cin, homeAdd);
+    cout<<"enter phone number: ";
+    getline(cin, phoneNum);
+
+    string sqlStatement = "insert into parent(parentID, fullName,accountID, homeAdd, phoneNum)"
+        "value(?,?,?,?,?)";
+
+    PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
+    
+    parentID=getNextID("parent",3);
+    pstmt->setString(1,parentID); //parentID
+    pstmt->setString(2,fName);  //full name
+    pstmt->setString(3,currentUser);     //accountID
+    pstmt->setString(4,homeAdd); //connect accountID
+    pstmt->setString(5,phoneNum);
+
+    ResultSet* res= pstmt->executeQuery();
+
+    
+    int childCount;
+    char input;
+    cout << "How many child to register? (enter number): " ;
+    cin>>input;
+
+    childCount = input - '0';
+
+    for (int i = 0; i < childCount; i++)
+    {
+        cout<<"\nregister child "<<i+1<<endl;
+        regStudent(1,parentID);
+    }
+    
 
 }   //register parent
 
 
-string DatabaseManager::getCurUsr(string username, string password){
+void DatabaseManager::getCurUsr(string username, string password){
     string userID;
 
-    string sqlStatement="select accountID from account where username=? and password=?";
+    string sqlStatement="select accountID, acc_type from account where username=? and password=?";
     PreparedStatement* pstmt = con->prepareStatement(sqlStatement);
 
     pstmt->setString(1,username);
@@ -268,10 +372,13 @@ string DatabaseManager::getCurUsr(string username, string password){
     
     if (res->next())
     {   
-        userID= res->getString(1);
+        currentUser= res->getString("accountID");
+        userRole= res->getString("acc_type");
     }
     
-    return userID;
+    cout<<currentUser<<endl;
+    cout<<userRole<<endl;
+    
 }   //get current user
 
 string DatabaseManager::getNextID(string tableName, int digitCount){

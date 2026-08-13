@@ -50,12 +50,13 @@ int main()
                 break;
                 
             case '3':
-                cout<<dbm.getNextID("instructor",3)<<endl;
+                cout<<dbm.getNextID("student",3)<<endl;
                 break;
 
 
             case '4':
-                cout<<dbm.getCurUsr("test1","abc123")<<endl;
+                dbm.getCurUsr("endmin","endminpwd");
+                // cout<<"current user: "<<
                 break;
             case '0':
                 cout<<"Adios amigos :)"<<endl;

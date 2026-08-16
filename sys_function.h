@@ -31,12 +31,14 @@ public:
     void createAcc(int option);  //1: student, 2: parent, 3: instructor
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
     void regParent();   //register parent
+    void regInstructor(); //register instructor
     void getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
     void adminDashboard();
     void studenDashboard();
     void parentDashboard();
     void instructorDashboard();
+    void clearScreen();
 
 };
 

@@ -10,7 +10,6 @@
 using namespace std;
 using namespace sql;
 
-void login(Connection* con);
 int main()
 {
     
@@ -33,8 +32,9 @@ int main()
             cout<<"[ MAIN MENU ]"<<endl;
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
-            cout<<"  [3] test function"<<endl;
-            cout<<"  [4] test getCurUsr"<<endl;
+            cout<<"  [3] test instructor dashboard"<<endl;
+            cout<<"  [4] test register instructor"<<endl;
+            cout<<"  [5] Test clear screen"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
             cin>>choice;
@@ -50,14 +50,17 @@ int main()
                 break;
                 
             case '3':
-                cout<<dbm.getNextID("student",3)<<endl;
+                dbm.instructorDashboard();
                 break;
 
 
             case '4':
-                dbm.getCurUsr("endmin","endminpwd");
+                dbm.regInstructor();
                 // cout<<"current user: "<<
                 break;
+            
+            case '5': dbm.clearScreen();    break;
+
             case '0':
                 cout<<"Adios amigos :)"<<endl;
                 running=false;

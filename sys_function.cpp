@@ -9,7 +9,6 @@ DatabaseManager::DatabaseManager() : con(nullptr) {}
 DatabaseManager::~DatabaseManager() {
     if (con) {
         delete con; // Handles cleanup automatically when class destroys
-        
     }
 }
 
@@ -29,31 +28,41 @@ bool DatabaseManager::connect(const string& host, const string& user, const stri
 void DatabaseManager::login() {
     string username, password;
 
-    cout << "=====LOGIN PAGE=====" << endl;
-    cout << "Enter username: ";
-    cin >> username;
-    cout << "Enter password: ";
-    cin >> password;
+    for (int i = 3; i > 0; i--)
+    {
+        cout << "=====LOGIN PAGE=====" << endl;
+        cout << "Enter username: ";
+        cin >> username;
+        cout << "Enter password: ";
+        cin >> password;
 
-    // Use ? placeholders for variables
-    PreparedStatement* pstmt = con->prepareStatement(
-        "SELECT acc_type FROM account WHERE username = ? AND password = ?"
-    );
-    pstmt->setString(1, username); 
-    pstmt->setString(2, password);
+        getCurUsr(username,password);
 
-    ResultSet* res = pstmt->executeQuery();
-
-    if (res->next()) {
-        string accType = res->getString("acc_type");
-        cout << "Login successful! Account type: " << accType << endl;
-    } else {
-        cout << "Invalid credentials." << endl;
+        if (userRole=="admin")
+        {
+            adminDashboard();
+            break;
+        }
+        else if (userRole=="student")
+        {
+            studenDashboard();
+            break;
+        }
+        else if (userRole=="parent")
+        {
+            parentDashboard();
+            break;
+        }
+        else if (userRole=="instructor")
+        {
+            instructorDashboard();
+            break;
+        }else{
+            cout<<"\nIncorrect username or password.."<<endl;
+            cout<<"Try again"<<endl;
+            cout<<i-1<<" retries left"<<endl;
+        }
     }
-
-    // Clean up dynamic memory
-    delete pstmt;
-    delete res;
 }
 
 void DatabaseManager::registration(){
@@ -191,13 +200,13 @@ void DatabaseManager::regStudent(int option,string parentID){
     }
     
     cout<<"choose class slot:"<<endl;
-    cout<<"  [1] Monday"<<endl;
-    cout<<"  [2] Tuesday"<<endl;
-    cout<<"  [3] Wednesday"<<endl;
-    cout<<"  [4] Thursday"<<endl;
-    cout<<"  [5] Friday"<<endl;
-    cout<<"  [6] Saturday"<<endl;
-    cout<<"  [7] Sunday"<<endl;
+    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
+    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
+    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
+    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
+    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
+    cout<<"  [6] Saturday (9am - 11am)"<<endl;
+    cout<<"  [7] Sunday (9am - 11am)"<<endl;
     cout<<"───────────────────────────────────────────────────────────────"<<endl;
     cout<<"  Select an option [1-7]: ";
     cin>>choice;
@@ -358,6 +367,112 @@ void DatabaseManager::regParent(){
 
 }   //register parent
 
+void DatabaseManager::regInstructor(){
+    string instructorID;
+    string fName;
+    string homeAdd;
+    string phoneNum;
+    string classSlot;
+    char choice;
+    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
+    
+    //create account
+    createAcc(3);
+
+    cin.ignore();
+    cout<<"Enter full name: ";
+    getline(cin, fName);
+    cout<<"enter home address: ";
+    getline(cin, homeAdd);
+    cout<<"enter phone number: ";
+    getline(cin, phoneNum);
+
+
+    cout<<"Assign this Instructor to which class?"<<endl;
+    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
+    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
+    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
+    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
+    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
+    cout<<"  [6] Saturday (9am - 11am)"<<endl;
+    cout<<"  [7] Sunday (9am - 11am)"<<endl;
+    cout<<"───────────────────────────────────────────────────────────────"<<endl;
+    cout<<"  Select an option [1-7]: ";
+    cin>>choice;
+    bool validInput=true;
+
+    do
+    {
+        switch (choice)
+        {
+        case '1':
+            classSlot = "s1";
+            validInput=true;
+            break;
+        
+        case '2':
+            classSlot = "s2";
+            validInput=true;
+            break;
+
+        case '3':
+            classSlot = "s3";
+            validInput=true;
+            break;
+
+        case '4':
+            classSlot = "s4";
+            validInput=true;
+            break;
+
+        case '5':
+            classSlot = "s5";
+            validInput=true;
+            break;
+
+        case '6':
+            classSlot = "s6";
+            validInput=true;
+            break;
+
+        case '7':
+            classSlot = "s7";
+            validInput=true;
+            break;
+
+        default:
+            cout<<"invalid input"<<endl;
+            validInput=false;
+            break;
+        }
+        
+    } while (validInput==false);
+    
+    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, classID)"
+    "value(?,?,?,?,?,CURDATE(),?)";
+
+    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
+
+    instructorID=getNextID("instructor",3);
+    pstmt->setString(1,instructorID);
+    pstmt->setString(2,fName);
+    pstmt->setString(3,currentUser);
+    pstmt->setString(4,homeAdd);
+    pstmt->setString(5,phoneNum);
+    pstmt->setString(6,classSlot);
+
+    ResultSet* res= pstmt->executeQuery();
+
+    cout<<"\nSuccessfully registered instructor :D"<<endl;
+    cout<<instructorID<<endl;
+    cout<<fName<<endl;
+    cout<<currentUser<<endl;
+    cout<<homeAdd<<endl;
+    cout<<phoneNum<<endl;
+    cout<<classSlot<<endl;
+
+}   //register instructor
+
 
 void DatabaseManager::getCurUsr(string username, string password){
     string userID;
@@ -374,11 +489,18 @@ void DatabaseManager::getCurUsr(string username, string password){
     {   
         currentUser= res->getString("accountID");
         userRole= res->getString("acc_type");
+    }else{
+        currentUser="NULL";
+        userRole="NULL";
+        // cout<<"Incorrect username or password.."<<endl;
+        // cout<<"Try again"<<endl;
     }
     
     cout<<currentUser<<endl;
     cout<<userRole<<endl;
     
+    delete pstmt;
+    delete res;
 }   //get current user
 
 string DatabaseManager::getNextID(string tableName, int digitCount){
@@ -431,3 +553,121 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
 
     return nextID;
 }
+
+void DatabaseManager::adminDashboard(){
+    char choice;
+    bool endLoop=false;
+    
+    while (!endLoop)
+    {
+        /* code */
+        cout << "===== Admin Dashboard =====" << endl;
+        cout << "   [1] Register Instructor" << endl;
+        cout << "   [2] View all students" << endl;
+        cout << "   [3] View withdrawals" << endl;
+        cout << "   [4] Monthly Summary" << endl;
+        cout << "   [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        cin>>choice;
+
+        switch (choice)
+        {
+        case '0':
+            endLoop=true;
+            break;
+        
+        case '1':
+            regInstructor();
+            break;
+        
+        case '2':
+            cout<<"case 2"<<endl;
+            break;
+
+        case '3':
+            /* code */
+            break;
+            
+        case '4':
+            /* code */
+            break;
+
+        case '5':
+            /* code */
+            break;
+        
+        default:
+            break;
+        }
+    }
+    
+    
+}   // admin dashboard
+
+void DatabaseManager::studenDashboard(){
+    cout << "===== Student Dashboard =====" << endl;
+    cout << "\n[ USER PROFILE ]" << endl;
+    cout << "  • Student Name : " << endl;
+    cout << "  • Class Slot   : " << endl;
+    cout << "  • Current Rank : " << endl;
+    cout << "  • Status       : " << endl;
+    cout << "  • Fee Status   : " << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ RANK PROMOTION HISTORY ]" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ AVAILABLE ACTIONS ]" << endl;
+    cout << "  [1] Pay Monthly Fees" << endl;
+    cout << "  [2] Withdraw" << endl;
+    cout << "  [0] Exit" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "   Select an option: ";
+}   // student dashboard
+
+void DatabaseManager::parentDashboard(){
+    cout << "===== Parent Dashboard =====" << endl;
+    cout << "\n[ PARENT PROFILE ]" << endl;
+    cout << "  • Name       : " << endl;
+    cout << "  • Phone No.  : " << endl;
+    cout << "  • Fee Status : " << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ CHILD(REN) ]" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ AVAILABLE ACTIONS ]" << endl;
+    cout << "  [1] Pay Monthly Fees" << endl;
+    cout << "  [2] Manage Children" << endl;
+    cout << "  [0] Exit" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "   Select an option: ";
+}   // parent dashboard
+
+void DatabaseManager::instructorDashboard(){
+    clearScreen();
+    
+    cout << "===== Instructor Dashboard =====" << endl;
+    cout << "\nHi, (instructor name)" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ AVAILABLE ACTIONS ]" << endl;
+    cout << "  [1] Pending Approval (0)" << endl;
+    cout << "  [2] View Students" << endl;
+    cout << "  [3] Promote Students" << endl;
+    cout << "  [4] Withdrawal Requests (0)" << endl;
+    cout << "  [0] Exit" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "   Select an option: ";
+}   // instructor dashboard
+
+
+
+
+
+
+
+
+void DatabaseManager::clearScreen(){
+    #if defined(_WIN32) || defined(_WIN64)
+        std::system("cls");   // Windows command
+    #else
+        std::system("clear"); // Linux / macOS / Unix command
+    #endif
+}   //clear screen

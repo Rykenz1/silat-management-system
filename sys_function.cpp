@@ -529,6 +529,8 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
                 prefix = 'i';
             } else if (tableName == "account") {
                 prefix = 'a';
+            } else if (tableName == "rank") {
+                prefix = 'r';
             }
             num = 1; // First ID starts at 1 (e.g., s001)
         }else{
@@ -606,6 +608,26 @@ void DatabaseManager::adminDashboard(){
 }   // admin dashboard
 
 void DatabaseManager::studenDashboard(){
+    string studentID;
+    string fName;
+    string classSlot;
+    string curRank;
+    string stdStatus;
+    string feeStatus; //paid, unpaid, etc
+
+    string sqlStmt = "select * from student where accountID="+currentUser;
+
+    Statement* stmt=con->createStatement();
+
+    ResultSet* res=stmt->executeQuery(sqlStmt);
+
+    // if(res->next()){
+    //     studentID=res->getString("studentID");
+    //     fName=
+    //     classSlot=
+    //     stdStatus=
+    // }
+
     cout << "===== Student Dashboard =====" << endl;
     cout << "\n[ USER PROFILE ]" << endl;
     cout << "  • Student Name : " << endl;
@@ -622,6 +644,10 @@ void DatabaseManager::studenDashboard(){
     cout << "  [0] Exit" << endl;
     cout << "\n───────────────────────────────────────────────────────────────" << endl;
     cout << "   Select an option: ";
+
+
+    delete res;
+    delete stmt;
 }   // student dashboard
 
 void DatabaseManager::parentDashboard(){
@@ -642,26 +668,231 @@ void DatabaseManager::parentDashboard(){
 }   // parent dashboard
 
 void DatabaseManager::instructorDashboard(){
-    clearScreen();
+    // clearScreen();
+    string instructorID;
+    string fName;
+    string accountID;
+    string homeAdd;
+    string phoneNum;
+    string joinDate;
+    string classSlot;
+    int pendingCount=0;
+    char choice;
+    bool endLoop=false;
+
+    while(!endLoop){
+        //get instructor info
+        string sqlStatement="SELECT i.*, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.classID = s.classID AND s.stdStatus = 'pending' WHERE i.accountID = ?";
+
+        PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
+
+        pstmt->setString(1,currentUser);
+
+        ResultSet* res=pstmt->executeQuery();
+
+        if(res->next()){
+            instructorID = res->getString("instructorID");
+            fName = res->getString("fullName");
+            homeAdd = res->getString("homeAdd");
+            phoneNum = res->getString("phoneNum");
+            joinDate = res->getString("joinDate");
+            classSlot = res->getString("classID");
+            pendingCount = stoi(res->getString("pendingCount"));
+        }
+
+
+        
+        cout << "===== Instructor Dashboard =====" << endl;
+        cout << "\nHi, "<<fName << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ AVAILABLE ACTIONS ]" << endl;
+        cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;
+        cout << "  [2] View Students" << endl;
+        cout << "  [3] Promote Students" << endl;
+        cout << "  [4] Withdrawal Requests (0)" << endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        cin>>choice;
+
+        switch (choice)
+        {
+        case '0':
+            //exit
+            endLoop=true;
+            break;
+        
+        case '1':
+            //approval
+            studentApproval("i001", "s1");
+            break;
+        
+        
+        case '2':
+            //view students
+            break;
+        
+        case '3':
+            //promote
+            break;
+        
+        case '4':
+            //withdrawal
+            break;
+        
+        
+        default:
+            cout<<"invalid input"<<endl;
+            break;
+        }
+    }
+
     
-    cout << "===== Instructor Dashboard =====" << endl;
-    cout << "\nHi, (instructor name)" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ AVAILABLE ACTIONS ]" << endl;
-    cout << "  [1] Pending Approval (0)" << endl;
-    cout << "  [2] View Students" << endl;
-    cout << "  [3] Promote Students" << endl;
-    cout << "  [4] Withdrawal Requests (0)" << endl;
-    cout << "  [0] Exit" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "   Select an option: ";
 }   // instructor dashboard
 
+void DatabaseManager::studentApproval(string instructorID, string classSlot){
+    cout<<"=====STUDENT APPROVAL====="<<endl;
+
+    struct pendingStudent
+    {
+        int digit;
+        string studentID;
+        string studentName;
+        string phoneNum; 
+    };
+    
+
+    
+    
+    vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
+    
+
+    string sqlStatement="select * from student where classID=? and stdStatus = 'pending'";
+
+    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
+    
+    pstmt->setString(1,classSlot);
+
+    ResultSet* res=pstmt->executeQuery();
+
+    //display student list in table view
+    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<endl;
+    cout<<"───────────────────────────────────────────────────────────────"<<endl;
+    int pendingCount=0;
+    while(res->next()){
+        pendingStudent s;
+
+        ++pendingCount;
+        s.digit=pendingCount;
+        s.studentID=res->getString("studentID");
+        s.studentName=res->getString("fullName");
+        s.phoneNum=res->getString("phoneNum");
+
+        pendingList.push_back(s);
+
+        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<endl;
+    }
+
+    //check if list is empty
+    if (pendingList.empty())
+    {
+        cout<<"\nNo pending student registration for the class slot: "<<classSlot<<endl;
+    }
+
+    cout<<"───────────────────────────────────────────────────────────────" << endl;
+    cout << "Select student(s) to approve (e.g. 1 / 1,3 / 1-3) or '0' to cancel: ";
+    
+    string input;
+    cin >> input;
+
+    if (input == "0") {
+        cout << "Approval cancelled.\n";
+        return;
+    }
+
+    set<int> selectedIndices = parseSelections(input, pendingList.size());
+
+    if (selectedIndices.empty()) {
+        cout << "Invalid selection.\n";
+        return;
+    }
+
+    //update statement
+    string updateSql="UPDATE student SET stdStatus = 'active', instructorID=?, joinDate = CURDATE() WHERE studentID = ?";
+
+    //insert statement
+    string insertStmt="insert into rank_history(rankID, studentID, date_achieved, instructorID)"
+    "value ('r1', ?, CURDATE(),?)";
+
+    PreparedStatement* updStmt=con->prepareStatement(updateSql);
+
+    PreparedStatement* istmt = con->prepareStatement(insertStmt);
+
+    //update student instructorID and status
+    int approvedCount =0;
+    for (int index : selectedIndices){
+        string targetStudentID = pendingList[index-1].studentID;
+
+        //update statement
+        updStmt->setString(1,instructorID);
+        updStmt->setString(2,targetStudentID);
+
+        updStmt->executeUpdate();
+
+        //insert into rank_history
+        istmt->setString(1,targetStudentID);
+        istmt->setString(2,instructorID);
+
+        istmt->executeUpdate();
+
+        cout<<"Approved: "<<pendingList[index-1].studentName<<"\n";
+        approvedCount++;
+    }
+
+    cout << "\nSuccessfully approved " << approvedCount << " student(s)!\n";
+    
+    delete pstmt;
+    delete istmt;
+    delete updStmt;
+    delete res;
+}   //student Approval
 
 
+set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
+    set<int> indices;
+    stringstream ss(input);
+    string token;
 
+    while (getline(ss, token, ',')) {
+        // Trim spaces if any
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
 
+        if (token.empty()) continue;
 
+        size_t dashPos = token.find('-');
+        if (dashPos != string::npos) {
+            // Handle range (e.g. 2-5)
+            try {
+                int start = stoi(token.substr(0, dashPos));
+                int end = stoi(token.substr(dashPos + 1));
+                if (start > end) swap(start, end);
+                for (int i = start; i <= end; ++i) {
+                    if (i >= 1 && i <= maxCount) indices.insert(i);
+                }
+            } catch (...) {}
+        } else {
+            // Handle single number (e.g. 1)
+            try {
+                int val = stoi(token);
+                if (val >= 1 && val <= maxCount) {
+                    indices.insert(val);
+                }
+            } catch (...) {}
+        }
+    }
+    return indices;
+}
 
 
 void DatabaseManager::clearScreen(){

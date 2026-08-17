@@ -35,6 +35,7 @@ int main()
             cout<<"  [3] test instructor dashboard"<<endl;
             cout<<"  [4] test register instructor"<<endl;
             cout<<"  [5] Test clear screen"<<endl;
+            cout<<"  [9] Test get next id"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
             cin>>choice;
@@ -60,6 +61,8 @@ int main()
                 break;
             
             case '5': dbm.clearScreen();    break;
+
+            case '9': cout<<dbm.getNextID("rank",2)<<endl;    break;
 
             case '0':
                 cout<<"Adios amigos :)"<<endl;

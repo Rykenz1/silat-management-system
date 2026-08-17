@@ -22,7 +22,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [ ] manage children
 
 ### Instructor
-- [ ] Pending approval
+- [x] Pending approval
 - [ ] view students
 - [ ] promote student
 - [ ] withdrawal requests

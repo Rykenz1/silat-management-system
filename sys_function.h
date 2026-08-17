@@ -6,6 +6,8 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <set>
+#include <vector>
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
 #include <cppconn/prepared_statement.h>
@@ -38,6 +40,9 @@ public:
     void studenDashboard();
     void parentDashboard();
     void instructorDashboard();
+    void studentApproval(string instructorID, string classSlot);
+    set<int> parseSelections(const string& input, int maxCount); //to parse input
+    
     void clearScreen();
 
 };

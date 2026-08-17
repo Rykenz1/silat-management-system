@@ -11,7 +11,6 @@
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
 #include <cppconn/prepared_statement.h>
-#include <cppconn/statement.h>
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 using namespace std;
@@ -31,19 +30,28 @@ public:
     void login();
     void registration();      //register menu
     void createAcc(int option);  //1: student, 2: parent, 3: instructor
-    void regStudent(int option, string parentID);  //0 self register, 1 under parent
-    void regParent();   //register parent
-    void regInstructor(); //register instructor
     void getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
-    void adminDashboard();
+    set<int> parseSelections(const string& input, int maxCount); //to parse input
+
+    void clearScreen();
+
+    //=====STUDENT FUNCTIONS=====
+    void regStudent(int option, string parentID);  //0 self register, 1 under parent
     void studenDashboard();
+
+    //=====PARENT FUNCTIONS=====
+    void regParent();   //register parent
     void parentDashboard();
+    
+    //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
-    set<int> parseSelections(const string& input, int maxCount); //to parse input
     
-    void clearScreen();
+    //=====ADMIN FUNCTIONS=====
+    void adminDashboard();
+    void regInstructor(); //register instructor
+
 
 };
 

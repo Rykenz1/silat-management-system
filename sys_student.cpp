@@ -156,23 +156,56 @@ void DatabaseManager::studenDashboard(){
     string curRank;
     string stdStatus;
     string feeStatus; //paid, unpaid, etc
+    struct rankHistory{
+        
+    };
 
-    string sqlStmt = "select * from student where accountID="+currentUser;
+    string sqlStmt = "select st.*, sl.classDay, r.color"
+     " from student st"
+     " join slot sl on st.slotID = sl.slotID"
+     " join rank_history rh on st.studentId = rh.studentID"
+     " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 where rh2.studentID = st.studentID) join rank r on rh.rankID = r.rankID where accountID=?";
 
-    Statement* stmt=con->createStatement();
+    PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
 
-    ResultSet* res=stmt->executeQuery(sqlStmt);
+    pstmt->setString(1,currentUser);
 
+    ResultSet* res=pstmt->executeQuery();
+
+    if(res->next()){
+        fName=res->getString("fullName");
+        classSlot=res->getString("classDay");
+        stdStatus=res->getString("stdStatus");
+        curRank=res->getString("color");
+    }
+
+    string rankStmt="select r.color, rh.date_achieved from rank_history rh"
+     " join rank r on rh.rankID = r.rankID"
+     " where rh.studentID= (select s.studentID from student s where accountID=?)"
+     " order by r.rankID desc";
+
+    PreparedStatement* rstmt=con->prepareStatement(rankStmt);
+
+    rstmt->setString(1,currentUser);
+
+    ResultSet* rankRes=rstmt->executeQuery();
 
     cout << "===== Student Dashboard =====" << endl;
     cout << "\n[ USER PROFILE ]" << endl;
-    cout << "  • Student Name : " << endl;
-    cout << "  • Class Slot   : " << endl;
-    cout << "  • Current Rank : " << endl;
-    cout << "  • Status       : " << endl;
+    cout << "  • Student Name : "<< fName << endl;
+    cout << "  • Class Slot   : "<< classSlot << endl;
+    cout << "  • Current Rank : "<< curRank << endl;
+    cout << "  • Status       : "<< stdStatus << endl;
     cout << "  • Fee Status   : " << endl;
     cout << "\n───────────────────────────────────────────────────────────────" << endl;
     cout << "[ RANK PROMOTION HISTORY ]" << endl;
+
+    cout << "    "<<left<<setw(13)<<"color"<<"  Date Achieved"<<endl;
+    while (rankRes->next())
+    {
+        cout<<"  • "<<left<<setw(13)<<rankRes->getString("color")<<": "<<rankRes->getString("date_achieved")<<endl;
+    }
+    
     cout << "\n───────────────────────────────────────────────────────────────" << endl;
     cout << "[ AVAILABLE ACTIONS ]" << endl;
     cout << "  [1] Pay Monthly Fees" << endl;
@@ -183,5 +216,5 @@ void DatabaseManager::studenDashboard(){
 
 
     delete res;
-    delete stmt;
+    delete pstmt;
 }   // student dashboard

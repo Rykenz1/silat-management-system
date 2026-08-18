@@ -225,8 +225,12 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
                 prefix = 'a';
             } else if (tableName == "rank") {
                 prefix = 'r';
+            } else if (tableName == "withdraw"){
+                prefix = 'w';
+            } else if (tableName == "payment"){
+                prefix = 'p';
             }
-            num = 1; // First ID starts at 1 (e.g., s001)
+            num = 0; // First ID starts at 0 (e.g., s000)
         }else{
 
             maxAcc = res->getString(1); //get the result of first column
@@ -287,6 +291,233 @@ set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
     return indices;
 }
 
+void DatabaseManager::payFees(){
+    bool isPaid=false;
+    double totalFee=0.0;
+    int childcount=0;
+    string entityID;
+
+    string checkSql=" select count(*) from payment where accountID = ?"
+     " and month(paymentDate) = month(curdate())"
+     " and year(paymentDate) = year(curdate())";
+
+    PreparedStatement* checkStmt=con->prepareStatement(checkSql);
+
+    checkStmt->setString(1,currentUser);
+
+    ResultSet* checkRes=checkStmt->executeQuery();
+
+    if(checkRes->next() && checkRes->getInt(1) > 0){
+        isPaid= true;
+    }
+
+    if (userRole == "student")
+    {
+        PreparedStatement* sStmt=con->prepareStatement(
+            "select studentID from student where accountID = ?");
+
+        sStmt->setString(1,currentUser);
+
+        ResultSet* sRes=sStmt->executeQuery();
+
+        if(sRes->next()){
+            entityID=sRes->getString("studentID");
+        }
+
+        totalFee=20;
+
+        delete sStmt;
+        delete sRes;
+
+    } else if (userRole == "parent")
+    {
+        PreparedStatement* pStmt=con->prepareStatement(
+            "select parentID from parent where accountID = ?");
+
+        pStmt->setString(1,currentUser);
+
+        ResultSet* sRes=pStmt->executeQuery();
+
+        if(sRes->next()){
+            entityID=sRes->getString("parentID");
+        }
+
+        // count active children under this parent
+        PreparedStatement* cStmt=con->prepareStatement(
+            "select count(*) from student where parentID = ? and stdStatus = 'active'");
+        
+        cStmt->setString(1, entityID);
+
+        ResultSet* cRes=cStmt->executeQuery();
+
+        if(cRes->next()){
+            childcount=cRes->getInt(1);
+        }
+
+        if (childcount <=0){
+            totalFee=0;
+        } else if( childcount <=2 ){
+            totalFee = childcount * 20;
+        } else {
+            totalFee = (2 * 20) + ((childcount-2)*10);
+        }
+        
+        delete pStmt;
+        delete sRes;
+        delete cStmt;
+        delete cRes;
+    }
+    
+    
+
+    cout << "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout << "│                    MONTHLY FEE PAYMENT                      │" << endl;
+    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
+
+    //overview
+    cout << "\n[ BILLING DETAILS ]"<<endl;
+    cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
+    cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
+    cout << "  • Billing Cycle: Current Month" << endl;
+    cout << "  • Payment Stat : " << (isPaid ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+
+    //if already paid
+    if (isPaid) {
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
+        cout << "           No further payment is required for this billing cycle." << endl;
+        cout << "\n  Press Enter to return...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    //if parent has 0 active children
+    if (userRole == "parent" && childcount == 0) {
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  " << YELLOW << "[NOTICE]" << RESET << " You have 0 active children enrolled." << endl;
+        cout << "           No tuition fees due at this moment." << endl;
+        cout << "\n  Press Enter to return...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    // 6. Display Breakdown & Pricing
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "  [ FEE BREAKDOWN ]" << endl;
+    cout << fixed << setprecision(2);
+
+    if (userRole == "student") {
+        cout << "  • Base Monthly Fee : RM 20.00" << endl;
+    } else {
+        int tier1Count = min(childcount, 2);
+        int tier2Count = max(0, childcount - 2);
+
+        cout << "  • Active Children  : " << childcount << endl;
+        cout << "  • 1st & 2nd Child  : " << tier1Count << " x RM 20.00  = RM " << (tier1Count * 20.00) << endl;
+        if (tier2Count > 0) {
+            cout << "  • Additional (" << tier2Count << ")   : " << tier2Count << " x RM 10.00  = RM " << (tier2Count * 10.00) << endl;
+        }
+    }
+    cout << "  -------------------------------------------------------------" << endl;
+    cout << "  • Total Amount Due : RM " << totalFee << endl;
+
+    // 7. Payment Confirmation
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    char confirm;
+    cout << "  Proceed with payment of RM " << totalFee << "? (Y/N): ";
+    cin >> confirm;
+
+    if (toupper(confirm) != 'Y') {
+        cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Payment transaction cancelled.\n" << endl;
+        return;
+    }
+
+    // 8. Insert Record into SQL Payment Table
+    try {
+        string paySql = "INSERT INTO payment (paymentID, paymentDate, amount, type, accountID) VALUES (?, CURDATE(), ?,'fees', ?)";
+
+        PreparedStatement* payStmt=con->prepareStatement(paySql);
+
+        payStmt->setString(1, getNextID("payment",4));
+        payStmt->setDouble(2, totalFee);
+        payStmt->setString(3, currentUser);
+        payStmt->executeUpdate();
+
+        cout << "\n  " << GREEN << "[SUCCESS]" << RESET << " Payment of RM " << totalFee << " recorded successfully!\n" << endl;
+
+    } catch (SQLException& e) {
+        cerr << "\n  " << RED << "[ERROR]" << RESET << " Failed to record payment: " << e.what() << endl;
+    }
+}   //pay fees
+
+void DatabaseManager::donate(){
+    double amount=0.0;
+    string choice;
+
+    //display page
+    cout <<GREEN<< "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout << "│                 GELANGGANG DONATION / INFAQ                 │" << endl;
+    cout << "└─────────────────────────────────────────────────────────────┘" <<RESET<< endl;
+    
+    cout << "\n  [ DONOR INFORMATION ]" << endl;
+    cout << "  • Contributor  : " << userName << endl;
+    cout << "  • Account Type : " << userRole << endl;
+
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "  [ SELECT DONATION AMOUNT ]" << endl;
+    cout << "   [1] RM 10.00" << endl;
+    cout << "   [2] RM 30.00" << endl;
+    cout << "   [3] RM 50.00" << endl;
+    cout << "   [4] Custom Amount" << endl;
+    cout << "   [0] Cancel / Return" << endl;
+    cout << "───────────────────────────────────────────────────────────────" << endl;
+    cout << "  Select an option [0-4]: ";
+
+    cin.ignore();
+    getline(cin,choice);
+
+    if (choice =="0")
+    {
+        PETC();
+        return;
+    }else if (choice=="1"){
+        amount=10.0;
+    }else if (choice=="2"){
+        amount=30.0;
+    }else if (choice=="3"){
+        amount=50.0;
+    }else if (choice=="4"){
+        // cin.ignore();
+        cout<<"Enter custom amount to donate:\nRM";
+        cin>>amount;
+    }else{
+        cout << "Invalid choice"<<endl;
+    }
+
+
+    string insertStmt="insert into payment(paymentID, paymentDate, amount, type, accountID)"
+     "values(?,curdate(),?,'donation',?)";
+    
+    PreparedStatement* dStmt=con->prepareStatement(insertStmt);
+
+    dStmt->setString(1,getNextID("payment",4));
+    dStmt->setDouble(2,amount);
+    dStmt->setString(3,currentUser);
+    
+    dStmt->executeUpdate();
+
+    PETC();
+    delete dStmt;
+} //Donate
+
+void DatabaseManager::PETC(){
+    cout << "\n  Press Enter to return...";
+    cin.ignore();
+    cin.get();
+    return;
+}
 
 void DatabaseManager::clearScreen(){
     #if defined(_WIN32) || defined(_WIN64)

@@ -21,6 +21,13 @@ private:
     Connection* con; // Connection stored once as a class attribute
     string currentUser; //account ID
     string userRole;    //admin, instructor, parent, student
+    string userName;    //current user's name
+    //color variables
+    const string RED   = "\033[1;31m";
+    const string GREEN = "\033[1;32m";
+    const string YELLOW = "\033[1;33m";
+    const string RESET = "\033[0m";
+
 public:
     DatabaseManager();
     ~DatabaseManager();
@@ -33,12 +40,17 @@ public:
     void getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
     set<int> parseSelections(const string& input, int maxCount); //to parse input
+    void payFees();
+    void donate();
 
+    void PETC(); // press enter to continue
     void clearScreen();
 
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
     void studenDashboard();
+    void withdrawRequest();
+
 
     //=====PARENT FUNCTIONS=====
     void regParent();   //register parent

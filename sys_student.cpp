@@ -150,71 +150,206 @@ void DatabaseManager::regStudent(int option,string parentID){
 
 
 void DatabaseManager::studenDashboard(){
-    string studentID;
+    // string studentID;
     string fName;
     string classSlot;
     string curRank;
     string stdStatus;
     string feeStatus; //paid, unpaid, etc
-    struct rankHistory{
+    char choice;
+    bool isPaid=false;
+    bool endLoop=false;
+
+    while (!endLoop)
+    {
+        string sqlStmt = "select st.*, sl.classDay, r.color"
+         " from student st"
+         " join slot sl on st.slotID = sl.slotID"
+         " join rank_history rh on st.studentId = rh.studentID"
+         " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 where rh2.studentID = st.studentID) join rank r on rh.rankID = r.rankID where accountID=?";
+
+        PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
+
+        pstmt->setString(1,currentUser);
+
+        ResultSet* res=pstmt->executeQuery();
+
+        if(res->next()){
+            fName=res->getString("fullName");
+            classSlot=res->getString("classDay");
+            stdStatus=res->getString("stdStatus");
+            curRank=res->getString("color");
+
+            userName=fName; // set global variable user Name to student full name
+        }
+
+        string rankStmt="select r.color, rh.date_achieved from rank_history rh"
+        " join rank r on rh.rankID = r.rankID"
+        " where rh.studentID= (select s.studentID from student s where accountID=?)"
+        " order by r.rankID desc";
+
+        PreparedStatement* rstmt=con->prepareStatement(rankStmt);
+
+        rstmt->setString(1,currentUser);
+
+        ResultSet* rankRes=rstmt->executeQuery();
+
+        string checkSql=" select count(*) from payment where accountID = ?"
+        " and month(paymentDate) = month(curdate())"
+        " and year(paymentDate) = year(curdate())";
+
+        PreparedStatement* checkStmt=con->prepareStatement(checkSql);
+
+        checkStmt->setString(1,currentUser);
+
+        ResultSet* checkRes=checkStmt->executeQuery();
+
+        if(checkRes->next() && checkRes->getInt(1) > 0){
+            isPaid= true;
+        }
+
+        cout << "===== Student Dashboard =====" << endl;
+        cout << "\n[ USER PROFILE ]" << endl;
+        cout << "  • Student Name : "<< fName << endl;
+        cout << "  • Class Slot   : "<< classSlot << endl;
+        cout << "  • Current Rank : "<< curRank << endl;
+        cout << "  • Status       : "<< stdStatus << endl;
+        cout << "  • Fee Status   : "<< (isPaid ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ RANK PROMOTION HISTORY ]" << endl;
+
+        cout << "    "<<left<<setw(13)<<"color"<<"  Date Achieved"<<endl;
+        while (rankRes->next())
+        {
+            cout<<"  • "<<left<<setw(13)<<rankRes->getString("color")<<": "<<rankRes->getString("date_achieved")<<endl;
+        }
         
-    };
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ AVAILABLE ACTIONS ]" << endl;
+        cout << "  [1] Pay Monthly Fees" << endl;
+        cout << "  [2] Donate :)" << endl;
+        cout << "  [3] Withdraw" << endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        cin>>choice;
 
-    string sqlStmt = "select st.*, sl.classDay, r.color"
-     " from student st"
-     " join slot sl on st.slotID = sl.slotID"
-     " join rank_history rh on st.studentId = rh.studentID"
-     " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 where rh2.studentID = st.studentID) join rank r on rh.rankID = r.rankID where accountID=?";
+        switch (choice)
+        {
+        case '0':
+            endLoop=true;
+            break;
 
-    PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
+        case '1':
+            //payfees;
+            cout<<"payfee"<<endl;
+            payFees();
+            break;
+        
+        case '2':
+            //donate
+            cout<<"donate"<<endl;
+            donate();
+            break;
+        
+        case '3':
+            //withdraw;
+            // cout<<"withdraw"<<endl;
+            withdrawRequest();
+            break;
+        
+        default:
+            cout<<"invalid input"<<endl;
+            break;
+        }
+
+        delete res;
+        delete pstmt;
+        delete rankRes;
+        delete rstmt;
+    }
+    
+
+    
+}   // student dashboard
+
+void DatabaseManager::withdrawRequest(){
+    string studentID;
+    string studentName;
+    string instructorID;
+    string stdStatus;
+    string reason;
+    char choice;
+    bool endLoop=false;
+
+    string profileStmt="select studentID, fullName, stdStatus, instructorID from student where accountID=?";
+
+    PreparedStatement* pstmt=con->prepareStatement(profileStmt);
 
     pstmt->setString(1,currentUser);
 
     ResultSet* res=pstmt->executeQuery();
 
     if(res->next()){
-        fName=res->getString("fullName");
-        classSlot=res->getString("classDay");
+        studentID=res->getString("studentID");
+        studentName=res->getString("fullName");
         stdStatus=res->getString("stdStatus");
-        curRank=res->getString("color");
+        instructorID=res->getString("instructorID");
     }
 
-    string rankStmt="select r.color, rh.date_achieved from rank_history rh"
-     " join rank r on rh.rankID = r.rankID"
-     " where rh.studentID= (select s.studentID from student s where accountID=?)"
-     " order by r.rankID desc";
-
-    PreparedStatement* rstmt=con->prepareStatement(rankStmt);
-
-    rstmt->setString(1,currentUser);
-
-    ResultSet* rankRes=rstmt->executeQuery();
-
-    cout << "===== Student Dashboard =====" << endl;
-    cout << "\n[ USER PROFILE ]" << endl;
-    cout << "  • Student Name : "<< fName << endl;
-    cout << "  • Class Slot   : "<< classSlot << endl;
-    cout << "  • Current Rank : "<< curRank << endl;
-    cout << "  • Status       : "<< stdStatus << endl;
-    cout << "  • Fee Status   : " << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ RANK PROMOTION HISTORY ]" << endl;
-
-    cout << "    "<<left<<setw(13)<<"color"<<"  Date Achieved"<<endl;
-    while (rankRes->next())
+    while (!endLoop)
     {
-        cout<<"  • "<<left<<setw(13)<<rankRes->getString("color")<<": "<<rankRes->getString("date_achieved")<<endl;
+        clearScreen();
+
+        cout<<RED<<"┌─────────────────────────────────────────────────────────────┐"<<endl;
+        cout<<"│                 STUDENT WITHDRAWAL REQUEST                  │"<<endl;
+        cout<<"└─────────────────────────────────────────────────────────────┘"<<RESET<<endl;
+        cout<<"[ STUDENT DETAILS ]"<<endl;
+        cout<<"  • Student ID  : "<<studentID<<endl;
+        cout<<"  • Full Name   : "<<studentName<<endl;
+        cout<<"  • Status      : "<<stdStatus<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"[ NOTICE ]"<<endl;
+        cout<<"  • Submitting this form sends a withdrawal request to your instructor for formal review and processing."<<endl;
+        cout<<"  • Type '0' or cancel at any time to abort."<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  Please State your reason for withdrawing:\n  >> ";
+        
+        cin.ignore();
+        getline(cin,reason);
+
+        if (reason == "0" || reason == "cancel" || reason == "CANCEL") {
+            cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Withdrawal request was cancelled.\n" << endl;
+            return;
+        }
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  Confirm withdrawal request? (y/n): ";
+        cin>>choice;
+
+        if (choice == 'Y' || choice=='y')
+        {
+            clearScreen();
+
+            cout<<GREEN<<" [ SUCCESS ]"<<RESET<<" Your withdrawal request has been submitted for review!"<<endl;
+            endLoop=true;
+        }
+        
     }
-    
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ AVAILABLE ACTIONS ]" << endl;
-    cout << "  [1] Pay Monthly Fees" << endl;
-    cout << "  [2] Withdraw" << endl;
-    cout << "  [0] Exit" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "   Select an option: ";
 
+    string insertStmt="insert into withdraw(withdrawID, studentID, instructorID, reason, wthDate)"
+    " values(?,?,?,?,CURDATE())";
 
-    delete res;
+    PreparedStatement* inStmt=con->prepareStatement(insertStmt);
+
+    inStmt->setString(1,getNextID("withdraw",4));
+    inStmt->setString(2,studentID);
+    inStmt->setString(3,instructorID);
+    inStmt->setString(4,reason);
+
+    inStmt->executeUpdate();
+
     delete pstmt;
-}   // student dashboard
+    delete inStmt;
+    delete res;
+    
+}   //withdraw request

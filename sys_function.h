@@ -11,7 +11,6 @@
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
 #include <cppconn/prepared_statement.h>
-#include <cppconn/statement.h>
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 using namespace std;
@@ -22,6 +21,13 @@ private:
     Connection* con; // Connection stored once as a class attribute
     string currentUser; //account ID
     string userRole;    //admin, instructor, parent, student
+    string userName;    //current user's name
+    //color variables
+    const string RED   = "\033[1;31m";
+    const string GREEN = "\033[1;32m";
+    const string YELLOW = "\033[1;33m";
+    const string RESET = "\033[0m";
+
 public:
     DatabaseManager();
     ~DatabaseManager();
@@ -31,19 +37,33 @@ public:
     void login();
     void registration();      //register menu
     void createAcc(int option);  //1: student, 2: parent, 3: instructor
-    void regStudent(int option, string parentID);  //0 self register, 1 under parent
-    void regParent();   //register parent
-    void regInstructor(); //register instructor
     void getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
-    void adminDashboard();
+    set<int> parseSelections(const string& input, int maxCount); //to parse input
+    void payFees();
+    void donate();
+
+    void PETC(); // press enter to continue
+    void clearScreen();
+
+    //=====STUDENT FUNCTIONS=====
+    void regStudent(int option, string parentID);  //0 self register, 1 under parent
     void studenDashboard();
+    void withdrawRequest();
+
+
+    //=====PARENT FUNCTIONS=====
+    void regParent();   //register parent
     void parentDashboard();
+    
+    //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
-    set<int> parseSelections(const string& input, int maxCount); //to parse input
     
-    void clearScreen();
+    //=====ADMIN FUNCTIONS=====
+    void adminDashboard();
+    void regInstructor(); //register instructor
+
 
 };
 

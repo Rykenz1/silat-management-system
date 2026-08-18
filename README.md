@@ -8,10 +8,11 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ### Student
 - [x] Student self-register
-- [ ] Display student Info
-- [ ] rank history
-- [ ] pay monthly fees
-- [ ] request withdraw
+- [x] Display student Info
+- [x] rank history
+- [x] pay monthly fees
+- [X] Donate
+- [x] request withdraw
 
 
 ### Parent

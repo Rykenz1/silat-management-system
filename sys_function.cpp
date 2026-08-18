@@ -1,5 +1,4 @@
 #include "sys_function.h"
-// #include <iostream>
 
 using namespace std;
 using namespace sql;
@@ -169,311 +168,6 @@ void DatabaseManager::createAcc(int option){
 }       //create account
 
 
-void DatabaseManager::regStudent(int option,string parentID){
-    string userID;
-    string fName;
-    string ic;
-    string homeAdd;
-    string phoneNum;
-    string classSlot="";
-    char choice;
-    
-    //only create account if self register (option 0)
-    if (option == 0)
-    {
-        cout<<"=====REGISTERING AS A STUDENT====="<<endl;
-        createAcc(1);
-    }
-    
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
-    cout<<"enter IC: ";
-    getline(cin, ic);
-
-    if (option==0)
-    {
-        cout<<"enter home address: ";
-        getline(cin, homeAdd);
-        cout<<"enter phone number: ";
-        getline(cin, phoneNum);
-    }
-    
-    cout<<"choose class slot:"<<endl;
-    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
-    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
-    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
-    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
-    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
-    cout<<"  [6] Saturday (9am - 11am)"<<endl;
-    cout<<"  [7] Sunday (9am - 11am)"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    cout<<"  Select an option [1-7]: ";
-    cin>>choice;
-
-    bool validInput=true;
-
-    do
-    {
-        switch (choice)
-        {
-        case '1':
-            classSlot = "s1";
-            validInput=true;
-            break;
-        
-        case '2':
-            classSlot = "s2";
-            validInput=true;
-            break;
-
-        case '3':
-            classSlot = "s3";
-            validInput=true;
-            break;
-
-        case '4':
-            classSlot = "s4";
-            validInput=true;
-            break;
-
-        case '5':
-            classSlot = "s5";
-            validInput=true;
-            break;
-
-        case '6':
-            classSlot = "s6";
-            validInput=true;
-            break;
-
-        case '7':
-            classSlot = "s7";
-            validInput=true;
-            break;
-
-        default:
-            cout<<"invalid input"<<endl;
-            validInput=false;
-            break;
-        }
-        
-    } while (validInput==false);
-    
-    
-
-    cin.ignore();
-    cout<<"confirm registration? y/n: ";
-    cin>>choice;
-    if(choice=='y' || choice== 'Y'){
-        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, classID,parentID)"
-        "value(?,?,?,?,?,?,CURDATE(),?,?)";
-
-        PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
-        
-        userID=getNextID("student",3);
-        pstmt->setString(1,userID); //studentID
-        pstmt->setString(2,fName);  //full name
-        pstmt->setString(3,ic);     //ic
-        
-        if (option==0) //for self register student
-        {
-        
-            pstmt->setString(4,currentUser); //connect accountID
-            pstmt->setString(5,homeAdd);
-            pstmt->setString(6,phoneNum);
-            pstmt->setNull(8, DataType::VARCHAR);
-
-            
-
-        }else if(option==1){ //for parent under parent
-            pstmt->setNull(4, DataType::VARCHAR);
-            pstmt->setNull(5, DataType::VARCHAR);
-            pstmt->setNull(6, DataType::VARCHAR);
-            pstmt->setString(8,parentID);
-        }
-        pstmt->setString(7,classSlot);
-
-        ResultSet* res= pstmt->executeQuery();
-
-        cout<<"registration success... waiting for instructor approval"<<endl;
-
-        
-    }else if(choice== 'n' || choice == 'N'){
-        cout<<"registration cancelled"<<endl;
-    }else{
-        cout<<"invalid input"<<endl;
-    }
-
-    // cout<<"full name: "<<fName<<endl;
-    // cout<<"ic: "<<ic;
-    // cout<<"home addrese: "<<homeAdd<<endl;
-    // cout<<"phone number: "<<phoneNum<<endl;
-    // cout<<"class slot: "<<classSlot<<endl;
-
-}  //register student
-
-
-void DatabaseManager::regParent(){
-    string parentID;
-    string fName;
-    string ic;
-    string homeAdd;
-    string phoneNum;
-
-    cout<<"=====REGISTERING AS A PARENT====="<<endl;
-    
-    //create account
-    createAcc(2);
-
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
-    cout<<"enter IC: ";
-    getline(cin, ic);
-    cout<<"enter home address: ";
-    getline(cin, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin, phoneNum);
-
-    string sqlStatement = "insert into parent(parentID, fullName,accountID, homeAdd, phoneNum)"
-        "value(?,?,?,?,?)";
-
-    PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
-    
-    parentID=getNextID("parent",3);
-    pstmt->setString(1,parentID); //parentID
-    pstmt->setString(2,fName);  //full name
-    pstmt->setString(3,currentUser);     //accountID
-    pstmt->setString(4,homeAdd); //connect accountID
-    pstmt->setString(5,phoneNum);
-
-    ResultSet* res= pstmt->executeQuery();
-
-    
-    int childCount;
-    char input;
-    cout << "How many child to register? (enter number): " ;
-    cin>>input;
-
-    childCount = input - '0';
-
-    for (int i = 0; i < childCount; i++)
-    {
-        cout<<"\nregister child "<<i+1<<endl;
-        regStudent(1,parentID);
-    }
-    
-
-}   //register parent
-
-void DatabaseManager::regInstructor(){
-    string instructorID;
-    string fName;
-    string homeAdd;
-    string phoneNum;
-    string classSlot;
-    char choice;
-    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
-    
-    //create account
-    createAcc(3);
-
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
-    cout<<"enter home address: ";
-    getline(cin, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin, phoneNum);
-
-
-    cout<<"Assign this Instructor to which class?"<<endl;
-    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
-    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
-    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
-    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
-    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
-    cout<<"  [6] Saturday (9am - 11am)"<<endl;
-    cout<<"  [7] Sunday (9am - 11am)"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    cout<<"  Select an option [1-7]: ";
-    cin>>choice;
-    bool validInput=true;
-
-    do
-    {
-        switch (choice)
-        {
-        case '1':
-            classSlot = "s1";
-            validInput=true;
-            break;
-        
-        case '2':
-            classSlot = "s2";
-            validInput=true;
-            break;
-
-        case '3':
-            classSlot = "s3";
-            validInput=true;
-            break;
-
-        case '4':
-            classSlot = "s4";
-            validInput=true;
-            break;
-
-        case '5':
-            classSlot = "s5";
-            validInput=true;
-            break;
-
-        case '6':
-            classSlot = "s6";
-            validInput=true;
-            break;
-
-        case '7':
-            classSlot = "s7";
-            validInput=true;
-            break;
-
-        default:
-            cout<<"invalid input"<<endl;
-            validInput=false;
-            break;
-        }
-        
-    } while (validInput==false);
-    
-    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, classID)"
-    "value(?,?,?,?,?,CURDATE(),?)";
-
-    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
-
-    instructorID=getNextID("instructor",3);
-    pstmt->setString(1,instructorID);
-    pstmt->setString(2,fName);
-    pstmt->setString(3,currentUser);
-    pstmt->setString(4,homeAdd);
-    pstmt->setString(5,phoneNum);
-    pstmt->setString(6,classSlot);
-
-    ResultSet* res= pstmt->executeQuery();
-
-    cout<<"\nSuccessfully registered instructor :D"<<endl;
-    cout<<instructorID<<endl;
-    cout<<fName<<endl;
-    cout<<currentUser<<endl;
-    cout<<homeAdd<<endl;
-    cout<<phoneNum<<endl;
-    cout<<classSlot<<endl;
-
-}   //register instructor
-
-
 void DatabaseManager::getCurUsr(string username, string password){
     string userID;
 
@@ -531,8 +225,12 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
                 prefix = 'a';
             } else if (tableName == "rank") {
                 prefix = 'r';
+            } else if (tableName == "withdraw"){
+                prefix = 'w';
+            } else if (tableName == "payment"){
+                prefix = 'p';
             }
-            num = 1; // First ID starts at 1 (e.g., s001)
+            num = 0; // First ID starts at 0 (e.g., s000)
         }else{
 
             maxAcc = res->getString(1); //get the result of first column
@@ -555,307 +253,6 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
 
     return nextID;
 }
-
-void DatabaseManager::adminDashboard(){
-    char choice;
-    bool endLoop=false;
-    
-    while (!endLoop)
-    {
-        /* code */
-        cout << "===== Admin Dashboard =====" << endl;
-        cout << "   [1] Register Instructor" << endl;
-        cout << "   [2] View all students" << endl;
-        cout << "   [3] View withdrawals" << endl;
-        cout << "   [4] Monthly Summary" << endl;
-        cout << "   [0] Exit" << endl;
-        cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout << "   Select an option: ";
-        cin>>choice;
-
-        switch (choice)
-        {
-        case '0':
-            endLoop=true;
-            break;
-        
-        case '1':
-            regInstructor();
-            break;
-        
-        case '2':
-            cout<<"case 2"<<endl;
-            break;
-
-        case '3':
-            /* code */
-            break;
-            
-        case '4':
-            /* code */
-            break;
-
-        case '5':
-            /* code */
-            break;
-        
-        default:
-            break;
-        }
-    }
-    
-    
-}   // admin dashboard
-
-void DatabaseManager::studenDashboard(){
-    string studentID;
-    string fName;
-    string classSlot;
-    string curRank;
-    string stdStatus;
-    string feeStatus; //paid, unpaid, etc
-
-    string sqlStmt = "select * from student where accountID="+currentUser;
-
-    Statement* stmt=con->createStatement();
-
-    ResultSet* res=stmt->executeQuery(sqlStmt);
-
-    // if(res->next()){
-    //     studentID=res->getString("studentID");
-    //     fName=
-    //     classSlot=
-    //     stdStatus=
-    // }
-
-    cout << "===== Student Dashboard =====" << endl;
-    cout << "\n[ USER PROFILE ]" << endl;
-    cout << "  • Student Name : " << endl;
-    cout << "  • Class Slot   : " << endl;
-    cout << "  • Current Rank : " << endl;
-    cout << "  • Status       : " << endl;
-    cout << "  • Fee Status   : " << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ RANK PROMOTION HISTORY ]" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ AVAILABLE ACTIONS ]" << endl;
-    cout << "  [1] Pay Monthly Fees" << endl;
-    cout << "  [2] Withdraw" << endl;
-    cout << "  [0] Exit" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "   Select an option: ";
-
-
-    delete res;
-    delete stmt;
-}   // student dashboard
-
-void DatabaseManager::parentDashboard(){
-    cout << "===== Parent Dashboard =====" << endl;
-    cout << "\n[ PARENT PROFILE ]" << endl;
-    cout << "  • Name       : " << endl;
-    cout << "  • Phone No.  : " << endl;
-    cout << "  • Fee Status : " << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ CHILD(REN) ]" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ AVAILABLE ACTIONS ]" << endl;
-    cout << "  [1] Pay Monthly Fees" << endl;
-    cout << "  [2] Manage Children" << endl;
-    cout << "  [0] Exit" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "   Select an option: ";
-}   // parent dashboard
-
-void DatabaseManager::instructorDashboard(){
-    // clearScreen();
-    string instructorID;
-    string fName;
-    string accountID;
-    string homeAdd;
-    string phoneNum;
-    string joinDate;
-    string classSlot;
-    int pendingCount=0;
-    char choice;
-    bool endLoop=false;
-
-    while(!endLoop){
-        //get instructor info
-        string sqlStatement="SELECT i.*, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.classID = s.classID AND s.stdStatus = 'pending' WHERE i.accountID = ?";
-
-        PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
-
-        pstmt->setString(1,currentUser);
-
-        ResultSet* res=pstmt->executeQuery();
-
-        if(res->next()){
-            instructorID = res->getString("instructorID");
-            fName = res->getString("fullName");
-            homeAdd = res->getString("homeAdd");
-            phoneNum = res->getString("phoneNum");
-            joinDate = res->getString("joinDate");
-            classSlot = res->getString("classID");
-            pendingCount = stoi(res->getString("pendingCount"));
-        }
-
-
-        
-        cout << "===== Instructor Dashboard =====" << endl;
-        cout << "\nHi, "<<fName << endl;
-        cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout << "[ AVAILABLE ACTIONS ]" << endl;
-        cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;
-        cout << "  [2] View Students" << endl;
-        cout << "  [3] Promote Students" << endl;
-        cout << "  [4] Withdrawal Requests (0)" << endl;
-        cout << "  [0] Exit" << endl;
-        cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout << "   Select an option: ";
-        cin>>choice;
-
-        switch (choice)
-        {
-        case '0':
-            //exit
-            endLoop=true;
-            break;
-        
-        case '1':
-            //approval
-            studentApproval("i001", "s1");
-            break;
-        
-        
-        case '2':
-            //view students
-            break;
-        
-        case '3':
-            //promote
-            break;
-        
-        case '4':
-            //withdrawal
-            break;
-        
-        
-        default:
-            cout<<"invalid input"<<endl;
-            break;
-        }
-    }
-
-    
-}   // instructor dashboard
-
-void DatabaseManager::studentApproval(string instructorID, string classSlot){
-    cout<<"=====STUDENT APPROVAL====="<<endl;
-
-    struct pendingStudent
-    {
-        int digit;
-        string studentID;
-        string studentName;
-        string phoneNum; 
-    };
-    
-
-    
-    
-    vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
-    
-
-    string sqlStatement="select * from student where classID=? and stdStatus = 'pending'";
-
-    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
-    
-    pstmt->setString(1,classSlot);
-
-    ResultSet* res=pstmt->executeQuery();
-
-    //display student list in table view
-    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    int pendingCount=0;
-    while(res->next()){
-        pendingStudent s;
-
-        ++pendingCount;
-        s.digit=pendingCount;
-        s.studentID=res->getString("studentID");
-        s.studentName=res->getString("fullName");
-        s.phoneNum=res->getString("phoneNum");
-
-        pendingList.push_back(s);
-
-        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<endl;
-    }
-
-    //check if list is empty
-    if (pendingList.empty())
-    {
-        cout<<"\nNo pending student registration for the class slot: "<<classSlot<<endl;
-    }
-
-    cout<<"───────────────────────────────────────────────────────────────" << endl;
-    cout << "Select student(s) to approve (e.g. 1 / 1,3 / 1-3) or '0' to cancel: ";
-    
-    string input;
-    cin >> input;
-
-    if (input == "0") {
-        cout << "Approval cancelled.\n";
-        return;
-    }
-
-    set<int> selectedIndices = parseSelections(input, pendingList.size());
-
-    if (selectedIndices.empty()) {
-        cout << "Invalid selection.\n";
-        return;
-    }
-
-    //update statement
-    string updateSql="UPDATE student SET stdStatus = 'active', instructorID=?, joinDate = CURDATE() WHERE studentID = ?";
-
-    //insert statement
-    string insertStmt="insert into rank_history(rankID, studentID, date_achieved, instructorID)"
-    "value ('r1', ?, CURDATE(),?)";
-
-    PreparedStatement* updStmt=con->prepareStatement(updateSql);
-
-    PreparedStatement* istmt = con->prepareStatement(insertStmt);
-
-    //update student instructorID and status
-    int approvedCount =0;
-    for (int index : selectedIndices){
-        string targetStudentID = pendingList[index-1].studentID;
-
-        //update statement
-        updStmt->setString(1,instructorID);
-        updStmt->setString(2,targetStudentID);
-
-        updStmt->executeUpdate();
-
-        //insert into rank_history
-        istmt->setString(1,targetStudentID);
-        istmt->setString(2,instructorID);
-
-        istmt->executeUpdate();
-
-        cout<<"Approved: "<<pendingList[index-1].studentName<<"\n";
-        approvedCount++;
-    }
-
-    cout << "\nSuccessfully approved " << approvedCount << " student(s)!\n";
-    
-    delete pstmt;
-    delete istmt;
-    delete updStmt;
-    delete res;
-}   //student Approval
 
 
 set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
@@ -894,11 +291,238 @@ set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
     return indices;
 }
 
+void DatabaseManager::payFees(){
+    bool isPaid=false;
+    double totalFee=0.0;
+    int childcount=0;
+    string entityID;
+
+    string checkSql=" select count(*) from payment where accountID = ?"
+     " and month(paymentDate) = month(curdate())"
+     " and year(paymentDate) = year(curdate())";
+
+    PreparedStatement* checkStmt=con->prepareStatement(checkSql);
+
+    checkStmt->setString(1,currentUser);
+
+    ResultSet* checkRes=checkStmt->executeQuery();
+
+    if(checkRes->next() && checkRes->getInt(1) > 0){
+        isPaid= true;
+    }
+
+    if (userRole == "student")
+    {
+        PreparedStatement* sStmt=con->prepareStatement(
+            "select studentID from student where accountID = ?");
+
+        sStmt->setString(1,currentUser);
+
+        ResultSet* sRes=sStmt->executeQuery();
+
+        if(sRes->next()){
+            entityID=sRes->getString("studentID");
+        }
+
+        totalFee=20;
+
+        delete sStmt;
+        delete sRes;
+
+    } else if (userRole == "parent")
+    {
+        PreparedStatement* pStmt=con->prepareStatement(
+            "select parentID from parent where accountID = ?");
+
+        pStmt->setString(1,currentUser);
+
+        ResultSet* sRes=pStmt->executeQuery();
+
+        if(sRes->next()){
+            entityID=sRes->getString("parentID");
+        }
+
+        // count active children under this parent
+        PreparedStatement* cStmt=con->prepareStatement(
+            "select count(*) from student where parentID = ? and stdStatus = 'active'");
+        
+        cStmt->setString(1, entityID);
+
+        ResultSet* cRes=cStmt->executeQuery();
+
+        if(cRes->next()){
+            childcount=cRes->getInt(1);
+        }
+
+        if (childcount <=0){
+            totalFee=0;
+        } else if( childcount <=2 ){
+            totalFee = childcount * 20;
+        } else {
+            totalFee = (2 * 20) + ((childcount-2)*10);
+        }
+        
+        delete pStmt;
+        delete sRes;
+        delete cStmt;
+        delete cRes;
+    }
+    
+    
+
+    cout << "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout << "│                    MONTHLY FEE PAYMENT                      │" << endl;
+    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
+
+    //overview
+    cout << "\n[ BILLING DETAILS ]"<<endl;
+    cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
+    cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
+    cout << "  • Billing Cycle: Current Month" << endl;
+    cout << "  • Payment Stat : " << (isPaid ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+
+    //if already paid
+    if (isPaid) {
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
+        cout << "           No further payment is required for this billing cycle." << endl;
+        cout << "\n  Press Enter to return...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    //if parent has 0 active children
+    if (userRole == "parent" && childcount == 0) {
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "  " << YELLOW << "[NOTICE]" << RESET << " You have 0 active children enrolled." << endl;
+        cout << "           No tuition fees due at this moment." << endl;
+        cout << "\n  Press Enter to return...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    // 6. Display Breakdown & Pricing
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "  [ FEE BREAKDOWN ]" << endl;
+    cout << fixed << setprecision(2);
+
+    if (userRole == "student") {
+        cout << "  • Base Monthly Fee : RM 20.00" << endl;
+    } else {
+        int tier1Count = min(childcount, 2);
+        int tier2Count = max(0, childcount - 2);
+
+        cout << "  • Active Children  : " << childcount << endl;
+        cout << "  • 1st & 2nd Child  : " << tier1Count << " x RM 20.00  = RM " << (tier1Count * 20.00) << endl;
+        if (tier2Count > 0) {
+            cout << "  • Additional (" << tier2Count << ")   : " << tier2Count << " x RM 10.00  = RM " << (tier2Count * 10.00) << endl;
+        }
+    }
+    cout << "  -------------------------------------------------------------" << endl;
+    cout << "  • Total Amount Due : RM " << totalFee << endl;
+
+    // 7. Payment Confirmation
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    char confirm;
+    cout << "  Proceed with payment of RM " << totalFee << "? (Y/N): ";
+    cin >> confirm;
+
+    if (toupper(confirm) != 'Y') {
+        cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Payment transaction cancelled.\n" << endl;
+        return;
+    }
+
+    // 8. Insert Record into SQL Payment Table
+    try {
+        string paySql = "INSERT INTO payment (paymentID, paymentDate, amount, type, accountID) VALUES (?, CURDATE(), ?,'fees', ?)";
+
+        PreparedStatement* payStmt=con->prepareStatement(paySql);
+
+        payStmt->setString(1, getNextID("payment",4));
+        payStmt->setDouble(2, totalFee);
+        payStmt->setString(3, currentUser);
+        payStmt->executeUpdate();
+
+        cout << "\n  " << GREEN << "[SUCCESS]" << RESET << " Payment of RM " << totalFee << " recorded successfully!\n" << endl;
+
+    } catch (SQLException& e) {
+        cerr << "\n  " << RED << "[ERROR]" << RESET << " Failed to record payment: " << e.what() << endl;
+    }
+}   //pay fees
+
+void DatabaseManager::donate(){
+    double amount=0.0;
+    string choice;
+
+    //display page
+    cout <<GREEN<< "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout << "│                 GELANGGANG DONATION / INFAQ                 │" << endl;
+    cout << "└─────────────────────────────────────────────────────────────┘" <<RESET<< endl;
+    
+    cout << "\n  [ DONOR INFORMATION ]" << endl;
+    cout << "  • Contributor  : " << userName << endl;
+    cout << "  • Account Type : " << userRole << endl;
+
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "  [ SELECT DONATION AMOUNT ]" << endl;
+    cout << "   [1] RM 10.00" << endl;
+    cout << "   [2] RM 30.00" << endl;
+    cout << "   [3] RM 50.00" << endl;
+    cout << "   [4] Custom Amount" << endl;
+    cout << "   [0] Cancel / Return" << endl;
+    cout << "───────────────────────────────────────────────────────────────" << endl;
+    cout << "  Select an option [0-4]: ";
+
+    cin.ignore();
+    getline(cin,choice);
+
+    if (choice =="0")
+    {
+        PETC();
+        return;
+    }else if (choice=="1"){
+        amount=10.0;
+    }else if (choice=="2"){
+        amount=30.0;
+    }else if (choice=="3"){
+        amount=50.0;
+    }else if (choice=="4"){
+        // cin.ignore();
+        cout<<"Enter custom amount to donate:\nRM";
+        cin>>amount;
+    }else{
+        cout << "Invalid choice"<<endl;
+    }
+
+
+    string insertStmt="insert into payment(paymentID, paymentDate, amount, type, accountID)"
+     "values(?,curdate(),?,'donation',?)";
+    
+    PreparedStatement* dStmt=con->prepareStatement(insertStmt);
+
+    dStmt->setString(1,getNextID("payment",4));
+    dStmt->setDouble(2,amount);
+    dStmt->setString(3,currentUser);
+    
+    dStmt->executeUpdate();
+
+    PETC();
+    delete dStmt;
+} //Donate
+
+void DatabaseManager::PETC(){
+    cout << "\n  Press Enter to return...";
+    cin.ignore();
+    cin.get();
+    return;
+}
 
 void DatabaseManager::clearScreen(){
     #if defined(_WIN32) || defined(_WIN64)
-        std::system("cls");   // Windows command
+        system("cls");   // Windows command
     #else
-        std::system("clear"); // Linux / macOS / Unix command
+        system("clear"); // Linux / macOS / Unix command
     #endif
 }   //clear screen

@@ -254,6 +254,26 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
     return nextID;
 }
 
+bool DatabaseManager::getFeeStatus(){
+    bool isPaid=false;
+
+    string checkSql=" select count(*) from payment where accountID = ?"
+        " and month(paymentDate) = month(curdate())"
+        " and year(paymentDate) = year(curdate())";
+
+    PreparedStatement* checkStmt=con->prepareStatement(checkSql);
+
+    checkStmt->setString(1,currentUser);
+
+    ResultSet* checkRes=checkStmt->executeQuery();
+
+    if(checkRes->next() && checkRes->getInt(1) > 0){
+        isPaid= true;
+    }
+    
+    return isPaid;
+}   //get fee status
+
 
 set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
     set<int> indices;
@@ -292,24 +312,10 @@ set<int> DatabaseManager::parseSelections(const string& input, int maxCount) {
 }
 
 void DatabaseManager::payFees(){
-    bool isPaid=false;
     double totalFee=0.0;
     int childcount=0;
     string entityID;
 
-    string checkSql=" select count(*) from payment where accountID = ?"
-     " and month(paymentDate) = month(curdate())"
-     " and year(paymentDate) = year(curdate())";
-
-    PreparedStatement* checkStmt=con->prepareStatement(checkSql);
-
-    checkStmt->setString(1,currentUser);
-
-    ResultSet* checkRes=checkStmt->executeQuery();
-
-    if(checkRes->next() && checkRes->getInt(1) > 0){
-        isPaid= true;
-    }
 
     if (userRole == "student")
     {
@@ -379,10 +385,10 @@ void DatabaseManager::payFees(){
     cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
     cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
     cout << "  • Billing Cycle: Current Month" << endl;
-    cout << "  • Payment Stat : " << (isPaid ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+    cout << "  • Payment Stat : " << (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
 
     //if already paid
-    if (isPaid) {
+    if (getFeeStatus()) {
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
         cout << "           No further payment is required for this billing cycle." << endl;
@@ -475,7 +481,6 @@ void DatabaseManager::donate(){
     cout << "───────────────────────────────────────────────────────────────" << endl;
     cout << "  Select an option [0-4]: ";
 
-    cin.ignore();
     getline(cin,choice);
 
     if (choice =="0")
@@ -514,7 +519,7 @@ void DatabaseManager::donate(){
 
 void DatabaseManager::PETC(){
     cout << "\n  Press Enter to return...";
-    cin.ignore();
+    // cin.ignore(10000, '\n');
     cin.get();
     return;
 }

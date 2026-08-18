@@ -101,7 +101,7 @@ void DatabaseManager::regStudent(int option,string parentID){
     cout<<"confirm registration? y/n: ";
     cin>>choice;
     if(choice=='y' || choice== 'Y'){
-        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, classID,parentID)"
+        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, slotID,parentID)"
         "value(?,?,?,?,?,?,CURDATE(),?,?)";
 
         PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
@@ -157,7 +157,7 @@ void DatabaseManager::studenDashboard(){
     string stdStatus;
     string feeStatus; //paid, unpaid, etc
     char choice;
-    bool isPaid=false;
+    
     bool endLoop=false;
 
     while (!endLoop)
@@ -183,6 +183,7 @@ void DatabaseManager::studenDashboard(){
             userName=fName; // set global variable user Name to student full name
         }
 
+        //get student rank
         string rankStmt="select r.color, rh.date_achieved from rank_history rh"
         " join rank r on rh.rankID = r.rankID"
         " where rh.studentID= (select s.studentID from student s where accountID=?)"
@@ -194,27 +195,13 @@ void DatabaseManager::studenDashboard(){
 
         ResultSet* rankRes=rstmt->executeQuery();
 
-        string checkSql=" select count(*) from payment where accountID = ?"
-        " and month(paymentDate) = month(curdate())"
-        " and year(paymentDate) = year(curdate())";
-
-        PreparedStatement* checkStmt=con->prepareStatement(checkSql);
-
-        checkStmt->setString(1,currentUser);
-
-        ResultSet* checkRes=checkStmt->executeQuery();
-
-        if(checkRes->next() && checkRes->getInt(1) > 0){
-            isPaid= true;
-        }
-
         cout << "===== Student Dashboard =====" << endl;
         cout << "\n[ USER PROFILE ]" << endl;
         cout << "  • Student Name : "<< fName << endl;
         cout << "  • Class Slot   : "<< classSlot << endl;
         cout << "  • Current Rank : "<< curRank << endl;
         cout << "  • Status       : "<< stdStatus << endl;
-        cout << "  • Fee Status   : "<< (isPaid ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        cout << "  • Fee Status   : "<< (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ RANK PROMOTION HISTORY ]" << endl;
 

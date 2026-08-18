@@ -84,7 +84,7 @@ void DatabaseManager::regInstructor(){
         
     } while (validInput==false);
     
-    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, classID)"
+    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, slotID)"
     "value(?,?,?,?,?,CURDATE(),?)";
 
     PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
@@ -125,7 +125,7 @@ void DatabaseManager::instructorDashboard(){
 
     while(!endLoop){
         //get instructor info
-        string sqlStatement="SELECT i.*, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.classID = s.classID AND s.stdStatus = 'pending' WHERE i.accountID = ?";
+        string sqlStatement="SELECT i.*, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.slotID = s.slotID AND s.stdStatus = 'pending' WHERE i.accountID = ?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
 
@@ -139,7 +139,7 @@ void DatabaseManager::instructorDashboard(){
             homeAdd = res->getString("homeAdd");
             phoneNum = res->getString("phoneNum");
             joinDate = res->getString("joinDate");
-            classSlot = res->getString("classID");
+            classSlot = res->getString("slotID");
             pendingCount = stoi(res->getString("pendingCount"));
         }
 
@@ -167,7 +167,7 @@ void DatabaseManager::instructorDashboard(){
         
         case '1':
             //approval
-            studentApproval("i001", "s1");
+            studentApproval(instructorID, classSlot);
             break;
         
         
@@ -211,7 +211,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
     vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
     
 
-    string sqlStatement="select * from student where classID=? and stdStatus = 'pending'";
+    string sqlStatement="select * from student where slotID=? and stdStatus = 'pending'";
 
     PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
     
@@ -299,4 +299,6 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
     delete istmt;
     delete updStmt;
     delete res;
+
+    PETC();
 }   //student Approval

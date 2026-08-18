@@ -22,6 +22,7 @@ private:
     string currentUser; //account ID
     string userRole;    //admin, instructor, parent, student
     string userName;    //current user's name
+    
     //color variables
     const string RED   = "\033[1;31m";
     const string GREEN = "\033[1;32m";
@@ -39,6 +40,7 @@ public:
     void createAcc(int option);  //1: student, 2: parent, 3: instructor
     void getCurUsr(string username, string password); //get current user
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
+    bool getFeeStatus(); //get fee status
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     void payFees();
     void donate();
@@ -55,6 +57,7 @@ public:
     //=====PARENT FUNCTIONS=====
     void regParent();   //register parent
     void parentDashboard();
+    void editInfo(string& phoneNum, string& h);
     
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();

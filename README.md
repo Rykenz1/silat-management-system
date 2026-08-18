@@ -17,9 +17,11 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ### Parent
 - [x] Parent register
-- [ ] Display parent info
-- [ ] Display children list
-- [ ] pay monthly fees
+- [x] Display parent info
+- [x] Update info
+- [x] Display children list
+- [x] pay monthly fees
+- [X] Donate
 - [ ] manage children
 
 ### Instructor

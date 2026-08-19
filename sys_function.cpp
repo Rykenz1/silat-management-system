@@ -149,22 +149,38 @@ void DatabaseManager::createAcc(int option){
         }
     }
 
-    
-    string sqlStatement = "insert into account(accountID,username, password,acc_type)"
+    if(option == 3){
+        string sqlStatement = "insert into account(accountID,username, password,acc_type,approval)"
+        "value(?,?,?,?,'approved')";
+
+        PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
+
+        pstmt->setString(1,getNextID("account",3));
+        pstmt->setString(2,username);
+        pstmt->setString(3,password);
+        pstmt->setString(4,accType);
+
+        pstmt->executeQuery();
+    }else{
+        string sqlStatement = "insert into account(accountID,username, password,acc_type)"
         "value(?,?,?,?)";
 
-    PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
+        PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
 
-    pstmt->setString(1,getNextID("account",3));
-    pstmt->setString(2,username);
-    pstmt->setString(3,password);
-    pstmt->setString(4,accType);
+        pstmt->setString(1,getNextID("account",3));
+        pstmt->setString(2,username);
+        pstmt->setString(3,password);
+        pstmt->setString(4,accType);
 
-    ResultSet* res= pstmt->executeQuery();
+        pstmt->executeQuery();
+
+        delete pstmt;
+    }
+    
 
     getCurUsr(username,password);
 
-    delete pstmt;
+    
 }       //create account
 
 

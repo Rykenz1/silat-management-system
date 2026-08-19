@@ -32,7 +32,7 @@ int main()
             cout<<"[ MAIN MENU ]"<<endl;
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
-            cout<<"  [3] test instructor dashboard"<<endl;
+            cout<<"  [3] view summary"<<endl;
             cout<<"  [4] test register instructor"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
@@ -49,7 +49,7 @@ int main()
                 break;
                 
             case '3':
-                dbm.instructorDashboard();
+                dbm.viewSummary();
                 break;
 
 

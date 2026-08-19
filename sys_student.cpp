@@ -88,7 +88,7 @@ void DatabaseManager::regStudent(int option,string parentID){
             break;
 
         default:
-            cout<<"invalid input"<<endl;
+            invalidInput();
             validInput=false;
             break;
         }
@@ -137,14 +137,9 @@ void DatabaseManager::regStudent(int option,string parentID){
     }else if(choice== 'n' || choice == 'N'){
         cout<<"registration cancelled"<<endl;
     }else{
-        cout<<"invalid input"<<endl;
+        invalidInput();
     }
 
-    // cout<<"full name: "<<fName<<endl;
-    // cout<<"ic: "<<ic;
-    // cout<<"home addrese: "<<homeAdd<<endl;
-    // cout<<"phone number: "<<phoneNum<<endl;
-    // cout<<"class slot: "<<classSlot<<endl;
 
 }  //register student
 

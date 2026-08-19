@@ -99,13 +99,13 @@ void DatabaseManager::regInstructor(){
 
     ResultSet* res= pstmt->executeQuery();
 
-    cout<<"\nSuccessfully registered instructor :D"<<endl;
-    cout<<instructorID<<endl;
-    cout<<fName<<endl;
-    cout<<currentUser<<endl;
-    cout<<homeAdd<<endl;
-    cout<<phoneNum<<endl;
-    cout<<classSlot<<endl;
+    // cout<<"\nSuccessfully registered instructor :D"<<endl;
+    // cout<<instructorID<<endl;
+    // cout<<fName<<endl;
+    // cout<<currentUser<<endl;
+    // cout<<homeAdd<<endl;
+    // cout<<phoneNum<<endl;
+    // cout<<classSlot<<endl;
 
 }   //register instructor
 
@@ -302,3 +302,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 
     PETC();
 }   //student Approval
+
+void DatabaseManager::viewStudents(){
+
+}   //view students

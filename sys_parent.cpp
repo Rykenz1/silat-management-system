@@ -129,8 +129,7 @@ void DatabaseManager::parentDashboard(){
             donate();
 
         } else {
-            clearScreen();
-            cout<< "Invalid Input"<<endl;
+            invalidInput();
         }
     }
 
@@ -242,8 +241,7 @@ void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
 
 
         } else {
-            clearScreen();
-            cout<<YELLOW<<"Invalid choice"<<RESET<<endl;
+            invalidInput();
         }
 
 
@@ -282,8 +280,7 @@ void DatabaseManager::mngChild(){
         } else if ( choice =="2"){
             withdrawRequest(1);
         } else {
-            clearScreen();
-            cout << "Invalid Input"<<endl;
+            invalidInput();
         }
         
     }

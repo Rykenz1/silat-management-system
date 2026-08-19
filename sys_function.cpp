@@ -471,7 +471,7 @@ void DatabaseManager::payFees(){
 
     } catch (SQLException& e) {
         cerr << "\n  " << RED << "[ERROR]" << RESET << " Failed to record payment: " << e.what() << endl;
-    }
+    }git
 }   //pay fees
 
 void DatabaseManager::donate(){

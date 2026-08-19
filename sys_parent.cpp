@@ -260,34 +260,34 @@ void DatabaseManager::mngChild(){
     string choice;
     bool endLoop=false;
 
-    // while (!endLoop)
-    // {
+    while (!endLoop)
+    {
+        cout<<"=====MANAGE CHILDREN====="<<endl;
 
+        cout << "\n[ CHILD(REN) ]" << endl;
+        dispChildren();
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ ACTIONS ]" << endl;
+        cout << "  [1] Add Child" << endl;
+        cout << "  [2] Withdraw Child" << endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";    
+        getline(cin,choice);
+
+        if (choice == "0"){
+            endLoop=true;
+        } else if ( choice =="1"){
+            regStudent(1,entityID);
+        } else if ( choice =="2"){
+            withdrawRequest(1);
+        } else {
+            clearScreen();
+            cout << "Invalid Input"<<endl;
+        }
         
-    // }
-    cout<<"=====MANAGE CHILDREN====="<<endl;
-
-    cout << "\n[ CHILD(REN) ]" << endl;
-    dispChildren();
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ ACTIONS ]" << endl;
-    cout << "  [1] Add Child" << endl;
-    cout << "  [2] Withdraw Child" << endl;
-    cout << "  [0] Exit" << endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "   Select an option: ";    
-    getline(cin,choice);
-
-    if (choice == "0"){
-        endLoop=true;
-    } else if ( choice =="1"){
-        regStudent(1,entityID);
-    } else if ( choice =="2"){
-        withdrawRequest(1);
-    } else {
-        clearScreen();
-        cout << "Invalid Input"<<endl;
     }
+    
     return;
     
     

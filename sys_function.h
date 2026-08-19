@@ -47,6 +47,7 @@ public:
     void donate();
 
     void PETC(); // press enter to continue
+    void invalidInput();
     void clearScreen();
 
     //=====STUDENT FUNCTIONS=====

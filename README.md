@@ -22,7 +22,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [x] Display children list
 - [x] pay monthly fees
 - [X] Donate
-- [ ] manage children
+- [x] manage children
 
 ### Instructor
 - [x] Pending approval

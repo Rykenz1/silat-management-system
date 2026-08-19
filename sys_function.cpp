@@ -97,7 +97,7 @@ void DatabaseManager::registration(){
             break;
             
         default:
-            cout<<"invalid input"<<endl;
+            invalidInput();
             break;
         }
     }
@@ -145,7 +145,7 @@ void DatabaseManager::createAcc(int option){
             password = cfmPwd;
             break;
         }else{
-            cout<<"try again"<<endl;
+            cout<<YELLOW<<"[ TRY AGAIN ] "<<RESET<<"Password did not match"<<endl;
         }
     }
 
@@ -498,7 +498,7 @@ void DatabaseManager::donate(){
         cout<<"Enter custom amount to donate:\nRM";
         cin>>amount;
     }else{
-        cout << "Invalid choice"<<endl;
+        invalidInput();
     }
 
 
@@ -519,9 +519,14 @@ void DatabaseManager::donate(){
 
 void DatabaseManager::PETC(){
     cout << "\n  Press Enter to return...";
-    // cin.ignore(10000, '\n');
+    cin.ignore(10000, '\n');
     cin.get();
     return;
+}
+
+void DatabaseManager::invalidInput(){
+    clearScreen();
+    cout<<YELLOW<<"[ WARNING ] "<<RESET<<"Invalid Input"<<endl;
 }
 
 void DatabaseManager::clearScreen(){

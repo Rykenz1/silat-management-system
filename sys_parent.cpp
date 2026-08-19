@@ -77,6 +77,7 @@ void DatabaseManager::parentDashboard(){
             userName=pRes->getString("fullName");
             phoneNum=pRes->getString("phoneNum");
             homeAdd=pRes->getString("homeAdd");
+            entityID=pRes->getString("parentID");
         }
 
         
@@ -140,10 +141,7 @@ void DatabaseManager::parentDashboard(){
 
 void DatabaseManager::dispChildren(){
     //get children list
-    string getChildSql = "select s.fullName, s.stdStatus, r.color from student s"
-    " join rank_history rh on s.studentID =  rh.studentID"
-    " join rank r on rh.rankID =  r.rankID"
-    " where s.parentID = (select parentID from parent where accountID = ?)";
+    string getChildSql = "SELECT s.studentID, s.fullName, s.stdStatus, ifnull(r.color, 'No Rank') AS color FROM student s LEFT JOIN rank_history rh ON s.studentID = rh.studentID AND rh.date_achieved = ( SELECT MAX(rh2.date_achieved) FROM rank_history rh2 WHERE rh2.studentID = s.studentID ) LEFT JOIN rank r ON rh.rankID = r.rankID WHERE s.parentID = (SELECT parentID FROM parent WHERE accountID = ?)";
 
     PreparedStatement* gcStmt=con->prepareStatement(getChildSql);
 
@@ -259,7 +257,7 @@ void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
 } // edit info
 
 void DatabaseManager::mngChild(){
-    
+    string choice;
     bool endLoop=false;
 
     // while (!endLoop)
@@ -271,6 +269,25 @@ void DatabaseManager::mngChild(){
 
     cout << "\n[ CHILD(REN) ]" << endl;
     dispChildren();
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ ACTIONS ]" << endl;
+    cout << "  [1] Add Child" << endl;
+    cout << "  [2] Withdraw Child" << endl;
+    cout << "  [0] Exit" << endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "   Select an option: ";    
+    getline(cin,choice);
+
+    if (choice == "0"){
+        endLoop=true;
+    } else if ( choice =="1"){
+        regStudent(1,entityID);
+    } else if ( choice =="2"){
+        withdrawRequest(1);
+    } else {
+        clearScreen();
+        cout << "Invalid Input"<<endl;
+    }
     return;
     
     

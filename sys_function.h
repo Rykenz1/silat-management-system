@@ -52,7 +52,7 @@ public:
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
     void studenDashboard();
-    void withdrawRequest();
+    void withdrawRequest(int option); //0 self-request, 1 parent request
 
     string studentStatus(string status); //add color to status
 

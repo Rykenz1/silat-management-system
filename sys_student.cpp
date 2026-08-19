@@ -242,7 +242,7 @@ void DatabaseManager::studenDashboard(){
         case '3':
             //withdraw;
             // cout<<"withdraw"<<endl;
-            withdrawRequest();
+            withdrawRequest(0);
             break;
         
         default:
@@ -260,32 +260,52 @@ void DatabaseManager::studenDashboard(){
     
 }   // student dashboard
 
-void DatabaseManager::withdrawRequest(){
+void DatabaseManager::withdrawRequest(int option){
     string studentID;
     string studentName;
     string instructorID;
     string stdStatus;
     string reason;
+    string profileStmt;
+    string childName;
     char choice;
     bool endLoop=false;
 
-    string profileStmt="select studentID, fullName, stdStatus, instructorID from student where accountID=?";
-
-    PreparedStatement* pstmt=con->prepareStatement(profileStmt);
-
-    pstmt->setString(1,currentUser);
-
-    ResultSet* res=pstmt->executeQuery();
-
-    if(res->next()){
-        studentID=res->getString("studentID");
-        studentName=res->getString("fullName");
-        stdStatus=res->getString("stdStatus");
-        instructorID=res->getString("instructorID");
-    }
 
     while (!endLoop)
     {
+        if (option == 0){
+            profileStmt="select studentID, fullName, stdStatus, instructorID from student where accountID=?";
+
+        }else if (option == 1){
+            profileStmt="select studentID, fullName, stdStatus, instructorID from student where parentID = (select parentID from parent where accountID =?) and fullName like ?";
+        }
+
+        PreparedStatement* pstmt=con->prepareStatement(profileStmt);
+
+        if(option == 0){
+            pstmt->setString(1,currentUser);
+        } else if (option ==1){
+            cout<<" Enter child name: ";
+            getline(cin,childName);
+            pstmt->setString(1,currentUser);
+            pstmt->setString(2,"%"+childName+"%");
+        }
+
+        ResultSet* res=pstmt->executeQuery();
+
+        if(res->next()){
+            studentID=res->getString("studentID");
+            studentName=res->getString("fullName");
+            stdStatus=res->getString("stdStatus");
+            instructorID=res->getString("instructorID");
+        } else{
+            clearScreen();
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Account did not found"<<endl;
+            delete res;
+            delete pstmt;
+        }
+
         clearScreen();
 
         cout<<RED<<"┌─────────────────────────────────────────────────────────────┐"<<endl;
@@ -302,13 +322,17 @@ void DatabaseManager::withdrawRequest(){
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  Please State your reason for withdrawing:\n  >> ";
         
-        cin.ignore();
+        // cin.ignore();
         getline(cin,reason);
 
         if (reason == "0" || reason == "cancel" || reason == "CANCEL") {
+            clearScreen();
             cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Withdrawal request was cancelled.\n" << endl;
+            delete res;
+            delete pstmt;
             return;
         }
+        
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  Confirm withdrawal request? (y/n): ";
         cin>>choice;
@@ -320,6 +344,9 @@ void DatabaseManager::withdrawRequest(){
             cout<<GREEN<<" [ SUCCESS ]"<<RESET<<" Your withdrawal request has been submitted for review!"<<endl;
             endLoop=true;
         }
+        delete pstmt;
+        
+        delete res;
         
     }
 
@@ -335,9 +362,7 @@ void DatabaseManager::withdrawRequest(){
 
     inStmt->executeUpdate();
 
-    delete pstmt;
     delete inStmt;
-    delete res;
     
 }   //withdraw request
 

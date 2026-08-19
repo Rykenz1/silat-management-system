@@ -79,17 +79,7 @@ void DatabaseManager::parentDashboard(){
             homeAdd=pRes->getString("homeAdd");
         }
 
-        //get children list
-        string getChildSql = "select s.fullName, s.stdStatus, r.color from student s"
-        " join rank_history rh on s.studentID =  rh.studentID"
-        " join rank r on rh.rankID =  r.rankID"
-        " where s.parentID = (select parentID from parent where accountID = ?)";
-
-        PreparedStatement* gcStmt=con->prepareStatement(getChildSql);
-
-        gcStmt->setString(1,currentUser);
-
-        ResultSet* gcRes=gcStmt->executeQuery();
+        
 
 
         //display page
@@ -101,14 +91,7 @@ void DatabaseManager::parentDashboard(){
         cout << "  • Fee Status   : "<< (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ CHILD(REN) ]" << endl;
-        cout <<left<<"  "<<setw(40)<<"Name"<<setw(10)<<"  Rank"<<setw(10)<<"  Status"<<endl;
-        //display children
-        while (gcRes->next())
-        {
-            cout <<left <<"  • "<<setw(40)<< gcRes->getString("fullName");
-            cout<<setw(10)<<gcRes->getString("color");
-            cout<<setw(10)<<gcRes->getString("stdStatus")<<endl;
-        }
+        dispChildren();
         
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ AVAILABLE ACTIONS ]" << endl;
@@ -123,22 +106,27 @@ void DatabaseManager::parentDashboard(){
 
         if (choice == "0"){
             endLoop=true;
+
         } else if ( choice == "1"){
             //pay fee
             clearScreen();
             payFees();
+
         } else if ( choice == "2"){
             //manage children
+            clearScreen();
+            mngChild();
+
         } else if ( choice == "3"){
             //edit info
             clearScreen();
-            cout<<"edit Info"<<endl;
             editInfo(phoneNum, homeAdd);
 
         } else if ( choice == "4"){
             //donation
             clearScreen();
             donate();
+
         } else {
             clearScreen();
             cout<< "Invalid Input"<<endl;
@@ -149,6 +137,30 @@ void DatabaseManager::parentDashboard(){
     return;
 
 }   // parent dashboard
+
+void DatabaseManager::dispChildren(){
+    //get children list
+    string getChildSql = "select s.fullName, s.stdStatus, r.color from student s"
+    " join rank_history rh on s.studentID =  rh.studentID"
+    " join rank r on rh.rankID =  r.rankID"
+    " where s.parentID = (select parentID from parent where accountID = ?)";
+
+    PreparedStatement* gcStmt=con->prepareStatement(getChildSql);
+
+    gcStmt->setString(1,currentUser);
+
+    ResultSet* gcRes=gcStmt->executeQuery();
+
+    
+    //display children
+    cout <<left<<"  "<<setw(40)<<"Name"<<setw(10)<<"  Rank"<<setw(10)<<"  Status"<<endl;
+    while (gcRes->next())
+    {
+        cout <<left <<"  • "<<setw(40)<< gcRes->getString("fullName");
+        cout<<setw(10)<<gcRes->getString("color");
+        cout<<setw(10)<<studentStatus(gcRes->getString("stdStatus"))<<endl;
+    }
+}   //display children
 
 void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
     string choice;
@@ -244,4 +256,24 @@ void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
     }
      
     clearScreen();
-}
+} // edit info
+
+void DatabaseManager::mngChild(){
+    
+    bool endLoop=false;
+
+    // while (!endLoop)
+    // {
+
+        
+    // }
+    cout<<"=====MANAGE CHILDREN====="<<endl;
+
+    cout << "\n[ CHILD(REN) ]" << endl;
+    dispChildren();
+    return;
+    
+    
+
+
+}   //manage child

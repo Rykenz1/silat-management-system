@@ -22,6 +22,7 @@ private:
     string currentUser; //account ID
     string userRole;    //admin, instructor, parent, student
     string userName;    //current user's name
+    string entityID;    //s00x , p00x, i00x
     
     //color variables
     const string RED   = "\033[1;31m";
@@ -53,11 +54,14 @@ public:
     void studenDashboard();
     void withdrawRequest();
 
+    string studentStatus(string status); //add color to status
 
     //=====PARENT FUNCTIONS=====
     void regParent();   //register parent
     void parentDashboard();
+    void dispChildren(); //display children list
     void editInfo(string& phoneNum, string& h);
+    void mngChild();
     
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
@@ -69,6 +73,5 @@ public:
 
 
 };
-
 
 #endif // SYS_FUNCTION_H

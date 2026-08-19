@@ -340,3 +340,16 @@ void DatabaseManager::withdrawRequest(){
     delete res;
     
 }   //withdraw request
+
+string DatabaseManager::studentStatus(string status){
+
+    if ( status =="active"){
+        return GREEN + "[ ACTIVE ]" + RESET; 
+    } else if (status=="pending"){
+        return YELLOW + "[ PENDING ]" + RESET;
+    } else if (status == "withdraw" || status == "inactive" || status == "rejected") {
+        return RED + "[ WITHDRAWN ]" + RESET;
+    }
+
+    return "[ " + status + " ]";
+}   //student status

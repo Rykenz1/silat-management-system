@@ -273,7 +273,7 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
 bool DatabaseManager::getFeeStatus(string payerAccID){
     bool isPaid=false;
 
-    string checkSql=" select count(*) from payment where accountID = ?"
+    string checkSql=" select count(*) from payment where accountID = ? and type='fees'"
         " and month(paymentDate) = month(curdate())"
         " and year(paymentDate) = year(curdate())";
 

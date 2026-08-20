@@ -71,12 +71,13 @@ public:
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
-    void viewStudents(); 
+    
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();
     void regInstructor(); //register instructor
     void viewSummary();
+    void viewStudents(); 
     string numToMonth(int monthInt);
 
 

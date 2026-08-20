@@ -55,6 +55,104 @@ void DatabaseManager::adminDashboard(){
     
 }   // admin dashboard
 
+void DatabaseManager::regInstructor(){
+    string instructorID;
+    string fName;
+    string homeAdd;
+    string phoneNum;
+    string classSlot;
+    char choice;
+    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
+    
+    //create account
+    createAcc(3);
+
+    cin.ignore();
+    cout<<"Enter full name: ";
+    getline(cin, fName);
+    cout<<"enter home address: ";
+    getline(cin, homeAdd);
+    cout<<"enter phone number: ";
+    getline(cin, phoneNum);
+
+
+    cout<<"Assign this Instructor to which class?"<<endl;
+    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
+    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
+    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
+    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
+    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
+    cout<<"  [6] Saturday (9am - 11am)"<<endl;
+    cout<<"  [7] Sunday (9am - 11am)"<<endl;
+    cout<<"───────────────────────────────────────────────────────────────"<<endl;
+    cout<<"  Select an option [1-7]: ";
+    cin>>choice;
+    bool validInput=true;
+
+    do
+    {
+        switch (choice)
+        {
+        case '1':
+            classSlot = "s1";
+            validInput=true;
+            break;
+        
+        case '2':
+            classSlot = "s2";
+            validInput=true;
+            break;
+
+        case '3':
+            classSlot = "s3";
+            validInput=true;
+            break;
+
+        case '4':
+            classSlot = "s4";
+            validInput=true;
+            break;
+
+        case '5':
+            classSlot = "s5";
+            validInput=true;
+            break;
+
+        case '6':
+            classSlot = "s6";
+            validInput=true;
+            break;
+
+        case '7':
+            classSlot = "s7";
+            validInput=true;
+            break;
+
+        default:
+            cout<<"invalid input"<<endl;
+            validInput=false;
+            break;
+        }
+        
+    } while (validInput==false);
+    
+    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, slotID)"
+    "value(?,?,?,?,?,CURDATE(),?)";
+
+    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
+
+    instructorID=getNextID("instructor",3);
+    pstmt->setString(1,instructorID);
+    pstmt->setString(2,fName);
+    pstmt->setString(3,currentUser);
+    pstmt->setString(4,homeAdd);
+    pstmt->setString(5,phoneNum);
+    pstmt->setString(6,classSlot);
+
+    ResultSet* res= pstmt->executeQuery();
+
+}   //register instructor
+
 void DatabaseManager::viewSummary(){
     int actvInstructor=0;
     int actvStudent=0;

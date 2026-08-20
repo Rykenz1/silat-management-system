@@ -6,6 +6,8 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ## Todo
 
+- [ ] dont show password when enter
+
 ### Student
 - [x] Student self-register
 - [x] Display student Info
@@ -34,4 +36,6 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [x] Instructor register
 - [ ] View all students
 - [ ] View withdrawals
+- [ ] view student performance
+- [ ] view anually new student vs withdrawal (graph like)
 - [x] Monthly summary

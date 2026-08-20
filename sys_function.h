@@ -45,6 +45,7 @@ public:
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     void payFees();
     void donate();
+    int calcAge(string IC); //calculate age based on IC
 
     void PETC(); // press enter to continue
     void invalidInput();

@@ -533,6 +533,69 @@ void DatabaseManager::donate(){
     delete dStmt;
 } //Donate
 
+int DatabaseManager::calcAge(string IC){
+    string curDate;
+    int curYear;
+    int curMonth;
+    int curDay;
+    
+    // 1. Remove non-numeric characters (handles '-' or spaces)
+    string cleanIC = "";
+    for (char c : IC) {
+        if (isdigit(c)) {
+            cleanIC += c;
+        }
+    }
+
+    // Return -1 (or 0) if the IC is invalid / too short
+    if (cleanIC.length() < 6) {
+        return -1; 
+    }
+
+    // 2. Extract Year, Month, and Day (First 6 digits: YYMMDD)
+    int birthYearShort = stoi(cleanIC.substr(0, 2));
+    int birthMonth     = stoi(cleanIC.substr(2, 2));
+    int birthDay       = stoi(cleanIC.substr(4, 2));
+
+    string getCurDate = "select curdate()";
+
+    PreparedStatement* cdStmt=con->prepareStatement(getCurDate);
+
+    ResultSet* cdRes=cdStmt->executeQuery();
+
+    if(cdRes->next()){
+        curDate=cdRes->getString(1);
+    }
+
+    if (curDate.length() < 10) {
+        return -1; // Safeguard if query returned empty
+    }
+
+    curYear = stoi(curDate.substr(0,4));
+    curMonth= stoi(curDate.substr(5,2));
+    curDay=stoi(curDate.substr(8,2));
+
+    // 4. Convert 2-digit year (YY) to 4-digit year (YYYY)
+    // If 2-digit birth year <= current 2-digit year (e.g. 05 <= 26 -> 2005), else (e.g. 98 -> 1998)
+    int curYearShort = curYear % 100;
+    int birthYearFull = (birthYearShort <= curYearShort) ? (2000 + birthYearShort) : (1900 + birthYearShort);
+
+    // 5. Calculate base age
+    int age = curYear - birthYearFull;
+
+    // 6. Subtract 1 if the birthday has not arrived yet this year
+    if (curMonth < birthMonth || (curMonth == birthMonth && curDay < birthDay)) {
+        age--;
+    }
+
+    
+    delete cdStmt;
+    delete cdRes;
+    
+    return age;
+
+}   //calculate Age
+
 void DatabaseManager::PETC(){
     cout << "\n  Press Enter to return...";
     cin.ignore(10000, '\n');

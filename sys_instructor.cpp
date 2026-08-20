@@ -135,6 +135,7 @@ void DatabaseManager::instructorDashboard(){
 
         if(res->next()){
             instructorID = res->getString("instructorID");
+            entityID=instructorID;
             fName = res->getString("fullName");
             homeAdd = res->getString("homeAdd");
             phoneNum = res->getString("phoneNum");
@@ -304,5 +305,11 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 }   //student Approval
 
 void DatabaseManager::viewStudents(){
-
+    cout<<"┌─────────────────────────────────────────────────────────────┐"<<endl;
+    cout<<"│                         STUDENT LIST                        │"<<endl;
+    cout<<"└─────────────────────────────────────────────────────────────┘"<<endl;
+    
+    cout<<"\nClass Day   : "<<endl;
+    cout<<"Instuctor Name: "<<endl;
+    
 }   //view students

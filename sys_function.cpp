@@ -270,16 +270,16 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
     return nextID;
 }
 
-bool DatabaseManager::getFeeStatus(){
+bool DatabaseManager::getFeeStatus(string payerAccID){
     bool isPaid=false;
 
-    string checkSql=" select count(*) from payment where accountID = ?"
+    string checkSql=" select count(*) from payment where accountID = ? and type='fees'"
         " and month(paymentDate) = month(curdate())"
         " and year(paymentDate) = year(curdate())";
 
     PreparedStatement* checkStmt=con->prepareStatement(checkSql);
 
-    checkStmt->setString(1,currentUser);
+    checkStmt->setString(1,payerAccID);
 
     ResultSet* checkRes=checkStmt->executeQuery();
 
@@ -401,10 +401,10 @@ void DatabaseManager::payFees(){
     cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
     cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
     cout << "  • Billing Cycle: Current Month" << endl;
-    cout << "  • Payment Stat : " << (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+    cout << "  • Payment Stat : " << (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
 
     //if already paid
-    if (getFeeStatus()) {
+    if (getFeeStatus(currentUser)) {
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
         cout << "           No further payment is required for this billing cycle." << endl;
@@ -533,6 +533,69 @@ void DatabaseManager::donate(){
     delete dStmt;
 } //Donate
 
+int DatabaseManager::calcAge(string IC){
+    string curDate;
+    int curYear;
+    int curMonth;
+    int curDay;
+    
+    // 1. Remove non-numeric characters (handles '-' or spaces)
+    string cleanIC = "";
+    for (char c : IC) {
+        if (isdigit(c)) {
+            cleanIC += c;
+        }
+    }
+
+    // Return -1 (or 0) if the IC is invalid / too short
+    if (cleanIC.length() < 6) {
+        return -1; 
+    }
+
+    // 2. Extract Year, Month, and Day (First 6 digits: YYMMDD)
+    int birthYearShort = stoi(cleanIC.substr(0, 2));
+    int birthMonth     = stoi(cleanIC.substr(2, 2));
+    int birthDay       = stoi(cleanIC.substr(4, 2));
+
+    string getCurDate = "select curdate()";
+
+    PreparedStatement* cdStmt=con->prepareStatement(getCurDate);
+
+    ResultSet* cdRes=cdStmt->executeQuery();
+
+    if(cdRes->next()){
+        curDate=cdRes->getString(1);
+    }
+
+    if (curDate.length() < 10) {
+        return -1; // Safeguard if query returned empty
+    }
+
+    curYear = stoi(curDate.substr(0,4));
+    curMonth= stoi(curDate.substr(5,2));
+    curDay=stoi(curDate.substr(8,2));
+
+    // 4. Convert 2-digit year (YY) to 4-digit year (YYYY)
+    // If 2-digit birth year <= current 2-digit year (e.g. 05 <= 26 -> 2005), else (e.g. 98 -> 1998)
+    int curYearShort = curYear % 100;
+    int birthYearFull = (birthYearShort <= curYearShort) ? (2000 + birthYearShort) : (1900 + birthYearShort);
+
+    // 5. Calculate base age
+    int age = curYear - birthYearFull;
+
+    // 6. Subtract 1 if the birthday has not arrived yet this year
+    if (curMonth < birthMonth || (curMonth == birthMonth && curDay < birthDay)) {
+        age--;
+    }
+
+    
+    delete cdStmt;
+    delete cdRes;
+    
+    return age;
+
+}   //calculate Age
+
 void DatabaseManager::PETC(){
     cout << "\n  Press Enter to return...";
     cin.ignore(10000, '\n');
@@ -552,3 +615,20 @@ void DatabaseManager::clearScreen(){
         system("clear"); // Linux / macOS / Unix command
     #endif
 }   //clear screen
+
+
+string DatabaseManager::getRankColor(string rankID){
+    string getColor = "select color from rank where rankID = ?";
+
+    PreparedStatement* rStmt =con->prepareStatement(getColor);
+
+    ResultSet* rRes=rStmt->executeQuery();
+
+    if (rRes->next())
+    {
+        return rRes->getString(1);
+        /* code */
+    } 
+
+    return "";
+}

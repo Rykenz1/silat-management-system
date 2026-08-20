@@ -40,15 +40,19 @@ public:
     void registration();      //register menu
     void createAcc(int option);  //1: student, 2: parent, 3: instructor
     void getCurUsr(string username, string password); //get current user
-    string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
-    bool getFeeStatus(); //get fee status
-    set<int> parseSelections(const string& input, int maxCount); //to parse input
     void payFees();
     void donate();
 
     void PETC(); // press enter to continue
     void invalidInput();
     void clearScreen();
+
+    //function with RETURN value
+    string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
+    bool getFeeStatus(string payerAccID); //get fee status
+    set<int> parseSelections(const string& input, int maxCount); //to parse input
+    int calcAge(string IC); //calculate age based on IC
+    string getRankColor(string rankID);
 
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
@@ -67,12 +71,13 @@ public:
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
-    void viewStudents(); 
+    
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();
     void regInstructor(); //register instructor
     void viewSummary();
+    void viewStudents(); 
     string numToMonth(int monthInt);
 
 

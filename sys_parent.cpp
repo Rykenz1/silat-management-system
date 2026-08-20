@@ -89,7 +89,7 @@ void DatabaseManager::parentDashboard(){
         cout << "  • Name         : "<<userName << endl;
         cout << "  • Phone No.    : "<<phoneNum << endl;
         cout << "  • Home Address : "<<homeAdd << endl;
-        cout << "  • Fee Status   : "<< (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        cout << "  • Fee Status   : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ CHILD(REN) ]" << endl;
         dispChildren();

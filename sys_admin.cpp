@@ -55,6 +55,104 @@ void DatabaseManager::adminDashboard(){
     
 }   // admin dashboard
 
+void DatabaseManager::regInstructor(){
+    string instructorID;
+    string fName;
+    string homeAdd;
+    string phoneNum;
+    string classSlot;
+    char choice;
+    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
+    
+    //create account
+    createAcc(3);
+
+    cin.ignore();
+    cout<<"Enter full name: ";
+    getline(cin, fName);
+    cout<<"enter home address: ";
+    getline(cin, homeAdd);
+    cout<<"enter phone number: ";
+    getline(cin, phoneNum);
+
+
+    cout<<"Assign this Instructor to which class?"<<endl;
+    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
+    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
+    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
+    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
+    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
+    cout<<"  [6] Saturday (9am - 11am)"<<endl;
+    cout<<"  [7] Sunday (9am - 11am)"<<endl;
+    cout<<"───────────────────────────────────────────────────────────────"<<endl;
+    cout<<"  Select an option [1-7]: ";
+    cin>>choice;
+    bool validInput=true;
+
+    do
+    {
+        switch (choice)
+        {
+        case '1':
+            classSlot = "s1";
+            validInput=true;
+            break;
+        
+        case '2':
+            classSlot = "s2";
+            validInput=true;
+            break;
+
+        case '3':
+            classSlot = "s3";
+            validInput=true;
+            break;
+
+        case '4':
+            classSlot = "s4";
+            validInput=true;
+            break;
+
+        case '5':
+            classSlot = "s5";
+            validInput=true;
+            break;
+
+        case '6':
+            classSlot = "s6";
+            validInput=true;
+            break;
+
+        case '7':
+            classSlot = "s7";
+            validInput=true;
+            break;
+
+        default:
+            cout<<"invalid input"<<endl;
+            validInput=false;
+            break;
+        }
+        
+    } while (validInput==false);
+    
+    string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, slotID)"
+    "value(?,?,?,?,?,CURDATE(),?)";
+
+    PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
+
+    instructorID=getNextID("instructor",3);
+    pstmt->setString(1,instructorID);
+    pstmt->setString(2,fName);
+    pstmt->setString(3,currentUser);
+    pstmt->setString(4,homeAdd);
+    pstmt->setString(5,phoneNum);
+    pstmt->setString(6,classSlot);
+
+    ResultSet* res= pstmt->executeQuery();
+
+}   //register instructor
+
 void DatabaseManager::viewSummary(){
     int actvInstructor=0;
     int actvStudent=0;
@@ -149,6 +247,134 @@ void DatabaseManager::viewSummary(){
     delete sRes;
     delete wRes;
 }   //view summary
+
+void DatabaseManager::viewStudents() {
+    struct student {
+        string studentID;
+        string fullName;
+        int age;
+        string classSlot;
+        string feeStatus;
+        string rank;
+        int rankLevel;
+    };
+
+    vector<student> studentList;
+
+    // Single query joining Student Info, Latest Rank, and Current Month Fee Status
+    string getInfoSql = 
+        "SELECT "
+        "    s.studentID, s.fullName, s.ic, sl.classDay, r.value, "
+        "    COALESCE(r.color, 'N/A') AS rankColor, "
+        "    COALESCE(s.accountID, p.accountID) AS payer_accountID, "
+        "    CASE WHEN COUNT(pay.paymentID) > 0 THEN 'PAID' ELSE 'UNPAID' END AS fee_status "
+        "FROM student s "
+        "LEFT JOIN parent p ON s.parentID = p.parentID "
+        "LEFT JOIN payment pay ON pay.accountID = COALESCE(s.accountID, p.accountID) "
+        "    AND pay.type = 'fee' "
+        "    AND MONTH(pay.paymentDate) = MONTH(CURRENT_DATE()) "
+        "    AND YEAR(pay.paymentDate) = YEAR(CURRENT_DATE()) "
+        "LEFT JOIN rank_history rh ON s.studentID = rh.studentID "
+        "    AND rh.date_achieved = ( "
+        "        SELECT MAX(rh2.date_achieved) "
+        "        FROM rank_history rh2 "
+        "        WHERE rh2.studentID = s.studentID "
+        "    ) "
+        "LEFT JOIN rank r ON rh.rankID = r.rankID "
+        "LEFT JOIN slot sl ON s.slotID = sl.slotID "
+        "    WHERE s.stdStatus='active' "
+        "GROUP BY s.studentID, s.fullName, s.ic, sl.classDay, r.color, COALESCE(s.accountID, p.accountID)"
+        "ORDER BY r.rankID desc, s.ic asc";
+
+    PreparedStatement* infoStmt = con->prepareStatement(getInfoSql);
+    ResultSet* infoRes = infoStmt->executeQuery();
+
+    while (infoRes->next()) {
+        student st;
+
+        st.studentID = infoRes->getString("studentID");
+        st.fullName  = infoRes->getString("fullName");
+        st.age       = calcAge(infoRes->getString("ic"));
+        st.classSlot = infoRes->getString("classDay");
+        st.rank      = infoRes->getString("rankColor");
+        st.feeStatus=(getFeeStatus(infoRes->getString("payer_accountID")) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET));
+        st.rankLevel = infoRes->getInt("value");
+
+        studentList.push_back(st);
+
+        cout << "\n" << st.fullName << endl;
+        cout << st.age << endl;
+        cout << st.rank << endl;
+        cout << st.classSlot << endl;
+        cout << st.feeStatus << endl;
+    }
+
+    // Clean up memory
+    delete infoRes;
+    delete infoStmt;
+
+    if (studentList.empty()) {
+        cout << "\n  No students registered.\n";
+        return;
+    }
+
+    // Sort: 1st by Rank Level (Highest to Lowest), 2nd by Age (Oldest to Youngest)
+    sort(studentList.begin(), studentList.end(), [](const student& a, const student& b) {
+        if (a.rankLevel != b.rankLevel) {
+            return a.rankLevel > b.rankLevel; // Higher rank first
+        }
+        return a.age > b.age; // Older student first within same rank
+    });
+
+    // Main Header
+    clearScreen();
+
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                                ALL STUDENTS                                 │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+    cout << "  • Total Students : " << studentList.size() << endl;
+    cout << "  • Grouped by Rank (Highest → Lowest) | Sorted by Age (Oldest → Youngest)\n" << endl;
+
+    string currentRank = "";
+
+    for (size_t i = 0; i < studentList.size(); ++i) {
+        const auto& st = studentList[i];
+
+        // If new rank group encountered, print group header & table headers
+        if (st.rank != currentRank) {
+            currentRank = st.rank;
+
+            // Count students in this rank group
+            int countInRank = count_if(studentList.begin(), studentList.end(), [&](const student& s) {
+                return s.rank == currentRank;
+            });
+
+            cout << "╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+            cout << "│  [ RANK: " << left << setw(15) << (currentRank + " ]") 
+                 <<left << setw(10)<<YELLOW<<"[ " << countInRank << " STUDENT(S) ]"<<RESET 
+                 << right << setw(47) << "│" << endl;
+            cout << "├───────┬─────────────────────────────────────┬─────┬─────────────┬──────────────────────┤" << endl;
+            cout << "│ ID    │ NAME                                │ AGE │ CLASS SLOT  │ FEE STATUS           │" << endl;
+            cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
+        }
+
+        // Print student row (setw(35) for Name)
+        cout << "│ " << left  << setw(5)  << st.studentID 
+             << " │ " << left  << setw(35) << st.fullName 
+             << " │ " << right << setw(3)  << st.age 
+             << " │ " << left  << setw(11) << st.classSlot 
+             << " │ " << left  << setw(32) << st.feeStatus << "│" << endl;
+
+        // Close table card when rank changes or on the last entry
+        if (i == studentList.size() - 1 || studentList[i + 1].rank != currentRank) {
+            cout << "╰───────┴─────────────────────────────────────┴─────┴─────────────┴──────────────────────╯\n" << endl;
+        }
+    }
+
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    PETC();
+
+}
 
 string DatabaseManager::numToMonth(int monthInt){
     switch (monthInt)

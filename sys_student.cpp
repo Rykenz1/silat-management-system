@@ -196,7 +196,7 @@ void DatabaseManager::studenDashboard(){
         cout << "  • Class Slot   : "<< classSlot << endl;
         cout << "  • Current Rank : "<< curRank << endl;
         cout << "  • Status       : "<< stdStatus << endl;
-        cout << "  • Fee Status   : "<< (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        cout << "  • Fee Status   : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ RANK PROMOTION HISTORY ]" << endl;
 

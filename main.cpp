@@ -33,7 +33,7 @@ int main()
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
             cout<<"  [3] view summary"<<endl;
-            cout<<"  [4] test register instructor"<<endl;
+            cout<<"  [4] test view students"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
             cin>>choice;
@@ -54,8 +54,7 @@ int main()
 
 
             case '4':
-                dbm.regInstructor();
-                // cout<<"current user: "<<
+                dbm.viewStudents();
                 break;
             
             case '0':

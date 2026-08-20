@@ -35,6 +35,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 ### Admin
 - [x] Instructor register
 - [ ] View all students
+- [ ] View all instructors
 - [ ] View withdrawals
 - [ ] view student performance
 - [ ] view anually new student vs withdrawal (graph like)

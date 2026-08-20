@@ -270,7 +270,7 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
     return nextID;
 }
 
-bool DatabaseManager::getFeeStatus(){
+bool DatabaseManager::getFeeStatus(string payerAccID){
     bool isPaid=false;
 
     string checkSql=" select count(*) from payment where accountID = ?"
@@ -279,7 +279,7 @@ bool DatabaseManager::getFeeStatus(){
 
     PreparedStatement* checkStmt=con->prepareStatement(checkSql);
 
-    checkStmt->setString(1,currentUser);
+    checkStmt->setString(1,payerAccID);
 
     ResultSet* checkRes=checkStmt->executeQuery();
 
@@ -401,10 +401,10 @@ void DatabaseManager::payFees(){
     cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
     cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
     cout << "  • Billing Cycle: Current Month" << endl;
-    cout << "  • Payment Stat : " << (getFeeStatus() ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+    cout << "  • Payment Stat : " << (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
 
     //if already paid
-    if (getFeeStatus()) {
+    if (getFeeStatus(currentUser)) {
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
         cout << "           No further payment is required for this billing cycle." << endl;
@@ -615,3 +615,20 @@ void DatabaseManager::clearScreen(){
         system("clear"); // Linux / macOS / Unix command
     #endif
 }   //clear screen
+
+
+string DatabaseManager::getRankColor(string rankID){
+    string getColor = "select color from rank where rankID = ?";
+
+    PreparedStatement* rStmt =con->prepareStatement(getColor);
+
+    ResultSet* rRes=rStmt->executeQuery();
+
+    if (rRes->next())
+    {
+        return rRes->getString(1);
+        /* code */
+    } 
+
+    return "";
+}

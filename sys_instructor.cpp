@@ -305,9 +305,35 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 }   //student Approval
 
 void DatabaseManager::viewStudents(){
-    cout<<"┌─────────────────────────────────────────────────────────────┐"<<endl;
+    struct student{
+        string fullName;
+        int age;
+        string classSlot;
+        string feeStatus;
+        string rankID;
+    };
+
+    vector<student> studentList;
+
+    string getInfoSql= "SELECT s.fullName, s.ic, COALESCE(s.accountID, p.accountID) AS payer_accountID, CASE WHEN COUNT(pay.paymentID) > 0 THEN 'PAID' ELSE 'UNPAID' END AS fee_status"
+    " from student s left join parent p on s.parentID = p.parentID"
+    " left join payment pay on"
+    " pay.accountID = COALESCE(s.accountID, p.accountID) AND pay.type = 'fee' AND MONTH(pay.paymentDate) = MONTH(CURRENT_DATE()) AND YEAR(pay.paymentDate) = YEAR(CURRENT_DATE())"
+    " group by s.studentID, s.fullName, coalesce(s.accountID, p.accountID)";
+
+    PreparedStatement* infoStmt=con->prepareStatement(getInfoSql);
+    ResultSet* infoRes=infoStmt->executeQuery();
+
+    while (infoRes->next())
+    {
+        student st;
+
+    }
+    
+
+    cout<<"╭─────────────────────────────────────────────────────────────╮"<<endl;
     cout<<"│                         STUDENT LIST                        │"<<endl;
-    cout<<"└─────────────────────────────────────────────────────────────┘"<<endl;
+    cout<<"╰─────────────────────────────────────────────────────────────╯"<<endl;
     
     cout<<"\nClass Day   : "<<endl;
     cout<<"Instuctor Name: "<<endl;

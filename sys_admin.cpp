@@ -248,7 +248,7 @@ void DatabaseManager::viewSummary(){
     delete wRes;
 }   //view summary
 
-void DatabaseManager::viewStudents() {
+void DatabaseManager::allStudents() {
     struct student {
         string studentID;
         string fullName;

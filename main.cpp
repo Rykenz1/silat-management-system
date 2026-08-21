@@ -54,7 +54,7 @@ int main()
 
 
             case '4':
-                dbm.viewStudents();
+                dbm.allStudents();
                 break;
             
             case '0':

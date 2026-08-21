@@ -57,6 +57,11 @@ int main()
                 dbm.allStudents();
                 break;
             
+            case '5':
+                dbm.viewStudents("i001","monday");
+                dbm.viewStudents("i002","saturday");
+                break;
+            
             case '0':
                 cout<<"Adios amigos :)"<<endl;
                 running=false;

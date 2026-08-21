@@ -52,7 +52,7 @@ public:
     bool getFeeStatus(string payerAccID); //get fee status
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     int calcAge(string IC); //calculate age based on IC
-    string getRankColor(string rankID);
+    string toUpperCase(string str); //convert string to uppercase
 
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
@@ -71,7 +71,7 @@ public:
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
-    
+    void viewStudents(string instructorID, string classDay);
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();

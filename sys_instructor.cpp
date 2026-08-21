@@ -18,7 +18,7 @@ void DatabaseManager::instructorDashboard(){
 
     while(!endLoop){
         //get instructor info
-        string sqlStatement="SELECT i.*, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.slotID = s.slotID AND s.stdStatus = 'pending' WHERE i.accountID = ?";
+        string sqlStatement="SELECT i.*, sl.classDay, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.slotID = s.slotID AND s.stdStatus = 'pending' join slot sl on sl.slotID = i.slotID WHERE i.accountID = ?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
 
@@ -30,10 +30,12 @@ void DatabaseManager::instructorDashboard(){
             instructorID = res->getString("instructorID");
             entityID=instructorID;
             fName = res->getString("fullName");
+            userName=fName;
+            entityID=instructorID;
             homeAdd = res->getString("homeAdd");
             phoneNum = res->getString("phoneNum");
             joinDate = res->getString("joinDate");
-            classSlot = res->getString("slotID");
+            classSlot = res->getString("classDay");
             pendingCount = stoi(res->getString("pendingCount"));
         }
 
@@ -67,6 +69,7 @@ void DatabaseManager::instructorDashboard(){
         
         case '2':
             //view students
+            viewStudents(entityID, classSlot);
             break;
         
         case '3':
@@ -197,3 +200,118 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
     PETC();
 }   //student Approval
 
+void DatabaseManager::viewStudents(string instructorID, string classDay){
+    struct student {
+        string studentID;
+        string fullName;
+        string contactNum;
+        int age;
+        string rank;
+    };
+
+    vector<student> studentList;
+    
+
+    string getStudentSql=
+        "select"
+        "   s.studentID, s.fullName, s.ic, "
+        "   COALESCE(r.color, 'N/A') AS rankColor, "
+        "   COALESCE(s.phoneNum,p.phoneNum) AS contactNum, "
+        "   sl.classDay "
+        "from student s "
+        "left join parent p on p.parentID = p.parentID "
+        "left join rank_history rh on rh.studentID = s.studentID"
+        "   and rh.date_achieved ="
+        "   (select "
+        "       rh2.date_achieved from rank_history rh2 "
+        "           where rh2.studentID=s.studentID "
+        "           order by rh2.date_achieved desc limit 1)" 
+        "left join rank r on rh.rankID = r.rankID "
+        "join slot sl on sl.slotID = s.slotID "
+        "where s.instructorID = ? and s.stdStatus = 'active' "
+        "   and sl.classDay=? "
+        "order by r.value desc, s.ic asc";
+
+    PreparedStatement* sStmt=con->prepareStatement(getStudentSql);
+
+    sStmt->setString(1,instructorID);
+    sStmt->setString(2,classDay);
+
+    ResultSet* sRes=sStmt->executeQuery();
+
+    if (sRes->rowsCount()<=0)
+    {
+       cout << "No active students found for this instructor." << endl;
+    }else{
+        
+
+        while (sRes->next())
+        {
+            student st;
+            
+            st.studentID=sRes->getString("studentID");
+            st.fullName=sRes->getString("fullName");
+            st.age=calcAge(sRes->getString("ic"));
+            st.rank=sRes->getString("rankColor");
+            st.contactNum=sRes->getString("contactNum");
+
+            studentList.push_back(st);
+
+            
+        }
+    }
+
+    delete sStmt;
+    delete sRes;
+
+
+    //rendering
+    // clearScreen();
+
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                                  STUDENTS                                   │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+
+    cout<<"  • Instructor Name : "<<userName<<endl;
+    cout<<"  • Class Day : "<<classDay<<endl;
+
+    string tableRank="";
+    
+    for(size_t i=0;i<studentList.size(); i++){
+
+        //print header
+        if (studentList[i].rank != tableRank){
+            tableRank=studentList[i].rank;
+
+            int studentThisRankCount =0;
+            for(int j =0;j<studentList.size(); j++){
+                if(studentList[j].rank == tableRank){
+                    ++studentThisRankCount;
+                }
+            }
+
+            cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+            cout<<"│ "<<left<<setw(76)<<("[ "+toUpperCase(tableRank)+" ("+to_string(studentThisRankCount)+" STUDENTS)"+" ]")<<"│"<<endl;
+            cout << "├──────┬────────────────────────────────────────────────┬─────┬───────────────┤" << endl;
+            cout<<left<<"│ ID  "<<" │ "<<setw(46)<<" STUDENT NAME"<<" │ "<<"AGE "<<"│ "<<setw(13)<<"CONTACT"<<" │"<<endl;
+            cout << "├──────┼────────────────────────────────────────────────┼─────┼───────────────┤" << endl;
+
+        }
+        
+        cout << "│ " << left << studentList[i].studentID
+             << " │ " << left <<setw(46)<< studentList[i].fullName
+             << " │ " << right<<setw(3) << studentList[i].age
+             << " │ " << left<<setw(13) << studentList[i].contactNum
+             << " │"<< endl;
+
+        if (i == studentList.size() - 1 || studentList[i + 1].rank != tableRank){
+            cout << "╰──────┴────────────────────────────────────────────────┴─────┴───────────────╯" << endl;
+        }
+    }
+
+
+
+    PETC();
+    return;
+
+} //view students

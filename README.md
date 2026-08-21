@@ -28,7 +28,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ### Instructor
 - [x] Pending approval
-- [ ] view students
+- [x] view students
 - [ ] promote student
 - [ ] withdrawal requests
 

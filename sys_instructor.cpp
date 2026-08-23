@@ -50,8 +50,7 @@ void DatabaseManager::instructorDashboard(){
         cout << "[ AVAILABLE ACTIONS ]" << endl;
         cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;
         cout << "  [2] View Students" << endl;
-        cout << "  [3] Promote Students" << endl;
-        cout << "  [4] Withdrawal Requests (0)" << endl;
+        cout << "  [3] Withdrawal Requests (0)" << endl;
         cout << "  [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
@@ -76,14 +75,9 @@ void DatabaseManager::instructorDashboard(){
             break;
         
         case '3':
-            promoteStudents(entityID);
-            break;
-        
-        case '4':
             //withdrawal
             break;
-        
-        
+
         default:
             cout<<"invalid input"<<endl;
             break;

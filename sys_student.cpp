@@ -151,17 +151,27 @@ void DatabaseManager::studenDashboard(){
     string curRank;
     string stdStatus;
     string feeStatus; //paid, unpaid, etc
-    char choice;
+    int withdrawRequestCount=0;
+    string choice;
     
     bool endLoop=false;
 
     while (!endLoop)
     {
-        string sqlStmt = "select st.*, sl.classDay, r.color"
+        clearScreen();
+        string sqlStmt = "select st.*, sl.classDay, r.color, count(w.studentID) as requestCount, "
+         "  w.wthStatus"
          " from student st"
          " join slot sl on st.slotID = sl.slotID"
          " join rank_history rh on st.studentId = rh.studentID"
-         " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 where rh2.studentID = st.studentID) join rank r on rh.rankID = r.rankID where accountID=?";
+         " left join withdraw w on w.studentID = st.studentID "
+         "      and w.wthStatus = (select wthStatus"
+         "          from withdraw where wthStatus = 'pending' "
+         "          order by withdrawID desc limit 1) "
+         " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 "
+         "      where rh2.studentID = st.studentID) "
+         " join rank r on rh.rankID = r.rankID "
+         " where accountID=?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
 
@@ -174,6 +184,7 @@ void DatabaseManager::studenDashboard(){
             classSlot=res->getString("classDay");
             stdStatus=res->getString("stdStatus");
             curRank=res->getString("color");
+            withdrawRequestCount=res->getInt("requestCount");
 
             userName=fName; // set global variable user Name to student full name
         }
@@ -190,17 +201,24 @@ void DatabaseManager::studenDashboard(){
 
         ResultSet* rankRes=rstmt->executeQuery();
 
-        cout << "===== Student Dashboard =====" << endl;
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                              STUDENT DASHBOARD                              │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "\n[ USER PROFILE ]" << endl;
-        cout << "  • Student Name : "<< fName << endl;
-        cout << "  • Class Slot   : "<< classSlot << endl;
-        cout << "  • Current Rank : "<< curRank << endl;
-        cout << "  • Status       : "<< stdStatus << endl;
-        cout << "  • Fee Status   : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        cout << "  • Student Name          : "<< fName << endl;
+        cout << "  • Class Slot            : "<< classSlot << endl;
+        cout << "  • Current Rank          : "<< curRank << endl;
+        cout << "  • Status                : "<< stdStatus << endl;
+        cout << "  • Fee Status            : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
+        
+        //if have withdraw request
+        if(withdrawRequestCount>0){
+            cout << "  • Withdraw Status       : "<<YELLOW<< res->getString("wthStatus") <<RESET<< endl;
+        }
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ RANK PROMOTION HISTORY ]" << endl;
 
-        cout << "    "<<left<<setw(13)<<"color"<<"  Date Achieved"<<endl;
+        cout << "    "<<left<<setw(13)<<"Color"<<"  Date Achieved"<<endl;
         while (rankRes->next())
         {
             cout<<"  • "<<left<<setw(13)<<rankRes->getString("color")<<": "<<rankRes->getString("date_achieved")<<endl;
@@ -208,41 +226,27 @@ void DatabaseManager::studenDashboard(){
         
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ AVAILABLE ACTIONS ]" << endl;
-        cout << "  [1] Pay Monthly Fees" << endl;
-        cout << "  [2] Donate :)" << endl;
-        cout << "  [3] Withdraw" << endl;
+        if(stdStatus == "active"){
+            cout << "  [1] Pay Monthly Fees" << endl;
+            cout << "  [2] Donate :)" << endl;
+            cout << "  [3] Withdraw" << endl;
+        }
+        
         cout << "  [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
-        cin>>choice;
+        getline(cin>>ws, choice);
 
-        switch (choice)
-        {
-        case '0':
+        if(choice == "0"){
             endLoop=true;
-            break;
-
-        case '1':
-            //payfees;
-            cout<<"payfee"<<endl;
+        }else if (choice == "1" && stdStatus == "active"){
             payFees();
-            break;
-        
-        case '2':
-            //donate
-            cout<<"donate"<<endl;
+        }else if (choice == "2" && stdStatus == "active"){
             donate();
-            break;
-        
-        case '3':
-            //withdraw;
-            // cout<<"withdraw"<<endl;
+        }else if (choice == "3" && stdStatus == "active"){
             withdrawRequest(0);
-            break;
-        
-        default:
-            cout<<"invalid input"<<endl;
-            break;
+        }else{
+            invalidInput();
         }
 
         delete res;
@@ -250,9 +254,7 @@ void DatabaseManager::studenDashboard(){
         delete rankRes;
         delete rstmt;
     }
-    
-
-    
+ 
 }   // student dashboard
 
 void DatabaseManager::withdrawRequest(int option){
@@ -263,17 +265,18 @@ void DatabaseManager::withdrawRequest(int option){
     string reason;
     string profileStmt;
     string childName;
-    char choice;
+    string choice;
+    int requestCount=0;
     bool endLoop=false;
 
 
     while (!endLoop)
     {
         if (option == 0){
-            profileStmt="select studentID, fullName, stdStatus, instructorID from student where accountID=?";
+            profileStmt="SELECT s.studentID, s.fullName, s.stdStatus, s.instructorID, count(w.studentID) as requestCount FROM student s left join withdraw w on w.studentID = s.studentID and w.wthStatus = 'pending' WHERE accountID =? ";
 
         }else if (option == 1){
-            profileStmt="select studentID, fullName, stdStatus, instructorID from student where parentID = (select parentID from parent where accountID =?) and fullName like ?";
+            profileStmt="SELECT s.studentID, s.fullName, s.stdStatus, s.instructorID, count(w.studentID) as requestCount FROM student s left join withdraw w on w.studentID = s.studentID and w.wthStatus = 'pending' WHERE parentID = (select parentID from parent where accountID =?) and fullName like ?";
         }
 
         PreparedStatement* pstmt=con->prepareStatement(profileStmt);
@@ -294,6 +297,7 @@ void DatabaseManager::withdrawRequest(int option){
             studentName=res->getString("fullName");
             stdStatus=res->getString("stdStatus");
             instructorID=res->getString("instructorID");
+            requestCount=res->getInt("requestCount");
         } else{
             clearScreen();
             cout<<RED<<"[ ERROR ] "<<RESET<<"Account did not found"<<endl;
@@ -301,44 +305,57 @@ void DatabaseManager::withdrawRequest(int option){
             delete pstmt;
         }
 
+        
         clearScreen();
 
-        cout<<RED<<"┌─────────────────────────────────────────────────────────────┐"<<endl;
+        cout<<RED<<"╭─────────────────────────────────────────────────────────────╮"<<endl;
         cout<<"│                 STUDENT WITHDRAWAL REQUEST                  │"<<endl;
-        cout<<"└─────────────────────────────────────────────────────────────┘"<<RESET<<endl;
-        cout<<"[ STUDENT DETAILS ]"<<endl;
+        cout<<"╰─────────────────────────────────────────────────────────────╯"<<RESET<<endl;
+        cout<<"\n[ STUDENT DETAILS ]"<<endl;
         cout<<"  • Student ID  : "<<studentID<<endl;
         cout<<"  • Full Name   : "<<studentName<<endl;
         cout<<"  • Status      : "<<stdStatus<<endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout<<"[ NOTICE ]"<<endl;
-        cout<<"  • Submitting this form sends a withdrawal request to your instructor for formal review and processing."<<endl;
-        cout<<"  • Type '0' or cancel at any time to abort."<<endl;
-        cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout << "  Please State your reason for withdrawing:\n  >> ";
-        
-        // cin.ignore();
-        getline(cin,reason);
 
-        if (reason == "0" || reason == "cancel" || reason == "CANCEL") {
-            clearScreen();
-            cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Withdrawal request was cancelled.\n" << endl;
-            delete res;
-            delete pstmt;
+        if(requestCount == 0){
+            cout<<YELLOW<<"[ NOTICE ]"<<RESET<<endl;
+            cout<<"  • Submitting this form sends a withdrawal request to your instructor for formal review and processing."<<endl;
+            cout<<"  • Type '0' or cancel at any time to abort."<<endl;
+            cout << "\n───────────────────────────────────────────────────────────────" << endl;
+            cout << "  Please State your reason for withdrawing:\n  >> ";
+            
+            // cin.ignore();
+            getline(cin>>ws,reason);
+
+            if (reason == "0" || reason == "cancel" || reason == "CANCEL") {
+                clearScreen();
+                cout << "\n  " << YELLOW << "[CANCELLED]" << RESET << " Withdrawal request was cancelled.\n" << endl;
+                delete res;
+                delete pstmt;
+                PETC();
+                return;
+            }
+            
+            cout << "\n───────────────────────────────────────────────────────────────" << endl;
+            cout << "  Confirm withdrawal request? (y/n): ";
+            getline(cin>>ws,choice);
+
+            if (choice == "Y" || choice=="y")
+            {
+                clearScreen();
+
+                cout<<GREEN<<" [ SUCCESS ]"<<RESET<<" Your withdrawal request has been submitted for review!"<<endl;
+                endLoop=true;
+
+                PETC();
+            }
+        }else{
+            cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"You have a withdrawal request pending already lah."<<endl;
+            cout<<"           wait ah"<<endl;
+            PETC();
             return;
         }
         
-        cout << "\n───────────────────────────────────────────────────────────────" << endl;
-        cout << "  Confirm withdrawal request? (y/n): ";
-        cin>>choice;
-
-        if (choice == 'Y' || choice=='y')
-        {
-            clearScreen();
-
-            cout<<GREEN<<" [ SUCCESS ]"<<RESET<<" Your withdrawal request has been submitted for review!"<<endl;
-            endLoop=true;
-        }
         delete pstmt;
         
         delete res;

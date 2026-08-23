@@ -40,8 +40,11 @@ void DatabaseManager::instructorDashboard(){
         }
 
 
-        
-        cout << "===== Instructor Dashboard =====" << endl;
+        //rendering
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                             INSTRUCTOR DASHBOARD                            │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "\nHi, "<<fName << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ AVAILABLE ACTIONS ]" << endl;

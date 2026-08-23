@@ -201,6 +201,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 }   //student Approval
 
 void DatabaseManager::viewStudents(string instructorID, string classDay){
+    
     struct student {
         string studentID;
         string fullName;
@@ -208,9 +209,8 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         int age;
         string rank;
     };
-
-    vector<student> studentList;
-    
+    string choice;
+    bool endLoop=false;    
 
     string getStudentSql=
         "select"
@@ -219,115 +219,118 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         "   COALESCE(s.phoneNum,p.phoneNum) AS contactNum, "
         "   sl.classDay "
         "from student s "
-        "left join parent p on p.parentID = p.parentID "
+        "left join parent p on s.parentID = p.parentID "
         "left join rank_history rh on rh.studentID = s.studentID"
-        "   and rh.date_achieved ="
+        "   and rh.rankID ="
         "   (select "
-        "       rh2.date_achieved from rank_history rh2 "
+        "       rh2.rankID from rank_history rh2 "
         "           where rh2.studentID=s.studentID "
-        "           order by rh2.date_achieved desc limit 1)" 
+        "           order by rh2.date_achieved desc, "
+        "                    rh2.rankID desc limit 1) " 
         "left join rank r on rh.rankID = r.rankID "
         "join slot sl on sl.slotID = s.slotID "
         "where s.instructorID = ? and s.stdStatus = 'active' "
         "   and sl.classDay=? "
-        "order by r.value desc, s.ic asc";
-
-    PreparedStatement* sStmt=con->prepareStatement(getStudentSql);
-
-    sStmt->setString(1,instructorID);
-    sStmt->setString(2,classDay);
-
-    ResultSet* sRes=sStmt->executeQuery();
-
-    if (sRes->rowsCount()<=0)
-    {
-       cout << "No active students found for this instructor." << endl;
-    }else{
-        
-
-        while (sRes->next())
-        {
-            student st;
-            
-            st.studentID=sRes->getString("studentID");
-            st.fullName=sRes->getString("fullName");
-            st.age=calcAge(sRes->getString("ic"));
-            st.rank=sRes->getString("rankColor");
-            st.contactNum=sRes->getString("contactNum");
-
-            studentList.push_back(st);
-
-            
-        }
-    }
-
-    delete sStmt;
-    delete sRes;
-
-
-    //rendering
-    // clearScreen();
-
-    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                                  STUDENTS                                   │" << endl;
-    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-
-    cout<<"  • Instructor Name : "<<userName<<endl;
-    cout<<"  • Class Day : "<<classDay<<endl;
-
-    string tableRank="";
-    
-    for(size_t i=0;i<studentList.size(); i++){
-        student sl=studentList[i];
-        //print header
-        if (studentList[i].rank != tableRank){
-            tableRank=sl.rank;
-
-            int studentThisRankCount =0;
-            for(int j =0;j<studentList.size(); j++){
-                if(studentList[j].rank == tableRank){
-                    ++studentThisRankCount;
-                }
-            }
-
-            cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-            cout<<"│ "<<left<<setw(76)<<("[ "+toUpperCase(tableRank)+" ("+to_string(studentThisRankCount)+" STUDENTS)"+" ]")<<"│"<<endl;
-            cout << "├──────┬────────────────────────────────────────────────┬─────┬───────────────┤" << endl;
-            cout<<left<<"│ ID  "<<" │ "<<setw(46)<<" STUDENT NAME"<<" │ "<<"AGE "<<"│ "<<setw(13)<<"CONTACT"<<" │"<<endl;
-            cout << "├──────┼────────────────────────────────────────────────┼─────┼───────────────┤" << endl;
-
-        }
-        
-        cout << "│ " << left << studentList[i].studentID
-             << " │ " << left <<setw(46)<< studentList[i].fullName
-             << " │ " << right<<setw(3) << studentList[i].age
-             << " │ " << left<<setw(13) << studentList[i].contactNum
-             << " │"<< endl;
-
-        if (i == studentList.size() - 1 || studentList[i + 1].rank != tableRank){
-            cout << "╰──────┴────────────────────────────────────────────────┴─────┴───────────────╯" << endl;
-        }
-    }
-
-    string choice;
-    bool endLoop=false;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    cout << "[ AVAILABLE ACTIONS ]" << endl;
-    cout << "  [1] Promote Student" << endl;
-    cout << "  [0] Exit" << endl;
-    cin.ignore();
-    getline(cin, choice);
+        "order by r.value desc, s.ic asc"
+    ;
 
     while (!endLoop)
     {
-        if(choice=="0") endLoop=true;
-        else if (choice =="1"){
+        clearScreen();
+        vector<student> studentList;
 
+        PreparedStatement* sStmt=con->prepareStatement(getStudentSql);
+
+        sStmt->setString(1,instructorID);
+        sStmt->setString(2,classDay);
+
+        ResultSet* sRes=sStmt->executeQuery();
+
+        if (sRes->rowsCount()<=0)
+        {
+        cout << "No active students found for this instructor." << endl;
+        }else{
+            
+
+            while (sRes->next())
+            {
+                student st;
+                
+                st.studentID=sRes->getString("studentID");
+                st.fullName=sRes->getString("fullName");
+                st.age=calcAge(sRes->getString("ic"));
+                st.rank=sRes->getString("rankColor");
+                st.contactNum=sRes->getString("contactNum");
+
+                studentList.push_back(st);
+
+                
+            }
+        }
+
+        delete sStmt;
+        delete sRes;
+
+        //rendering
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                  STUDENTS                                   │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+
+        cout<<"  • Instructor Name : "<<GREEN<<userName<<RESET<<endl;
+        cout<<"  • Class Day       : "<<GREEN<<classDay<<RESET<<endl;
+        cout<<"  • Total Students  : "<<GREEN<<studentList.size()<<" Students"<<RESET<<endl;
+
+        string tableRank="";
+        
+        for(size_t i=0;i<studentList.size(); i++){
+            student sl=studentList[i];
+            //print header
+            if (studentList[i].rank != tableRank){
+                tableRank=sl.rank;
+
+                int studentThisRankCount =0;
+                for(int j =0;j<studentList.size(); j++){
+                    if(studentList[j].rank == tableRank){
+                        ++studentThisRankCount;
+                    }
+                }
+
+                cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+                cout<<"│ "<<WHITE<<left<<setw(76)<<("[ "+toUpperCase(tableRank)+" ("+to_string(studentThisRankCount)+" STUDENTS)"+" ]")<<RESET<<"│"<<endl;
+                cout << "├──────┬────────────────────────────────────────────────┬─────┬───────────────┤" << endl;
+                cout<<left<<"│ ID  "<<" │ "<<setw(46)<<" STUDENT NAME"<<" │ "<<"AGE "<<"│ "<<setw(13)<<"CONTACT"<<" │"<<endl;
+                cout << "├──────┼────────────────────────────────────────────────┼─────┼───────────────┤" << endl;
+
+            }
+            
+            cout << "│ " << left << studentList[i].studentID
+                << " │ " << left <<setw(46)<< studentList[i].fullName
+                << " │ " << right<<setw(3) << studentList[i].age
+                << " │ " << left<<setw(13) << studentList[i].contactNum
+                << " │"<< endl;
+
+            if (i == studentList.size() - 1 || studentList[i + 1].rank != tableRank){
+                cout << "╰──────┴────────────────────────────────────────────────┴─────┴───────────────╯" << endl;
+            }
+        }
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ AVAILABLE ACTIONS ]" << endl;
+        cout << "  [1] Promote Student" << endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        getline(cin>>ws, choice);
+
+        if(choice=="0"){
+            endLoop=true;
+        }
+        else if (choice =="1"){
+            promoteStudents(instructorID);
+        }else{
+            invalidInput();
         }
     }
-    
 
-    PETC();
     return;
 
 } //view students
@@ -335,11 +338,7 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
 void DatabaseManager::promoteStudents(string instructorID){
     string name;
     string choice;
-
-    cout<<"Enter name "<<endl;
-    cout<<" >> ";
-    getline(cin >> ws, name);
-
+    bool endLoop=false;
     struct selectedStudent{
         string studentID;
         string fullName;
@@ -350,6 +349,7 @@ void DatabaseManager::promoteStudents(string instructorID){
 
     vector<selectedStudent> foundList;
     vector<selectedStudent> selectedList;
+
     
     //find student from name
     string findStudentSQL = 
@@ -358,112 +358,147 @@ void DatabaseManager::promoteStudents(string instructorID){
         "   rh.rankID, r.color "
         "from student s "
         "join rank_history rh on rh.studentID = s.studentID "
-        "   and rh.date_achieved = "
-        "       (select date_achieved from rank_history where studentID = s.studentID "
-        "       order by date_achieved desc limit 1) "
+        "   and rh.rankID = "
+        "       (select rankID from rank_history where studentID = s.studentID "
+        "       order by date_achieved desc, rankID desc limit 1) "
         "join rank r on r.rankID = rh.rankID "
-        "where s.fullname like ? and s.instructorID=?" ;
-
-    PreparedStatement* fsStmt=con->prepareStatement(findStudentSQL);
-
-    fsStmt->setString(1, ("%"+name+"%"));
-    fsStmt->setString(2, instructorID);
-
-    ResultSet* fsRes=fsStmt->executeQuery();
+        "where s.fullname like ? and s.instructorID=? " 
+        "order by r.rankID desc, s.ic asc";
     
-    //insert found students into the found list
-    while (fsRes->next())   
+    while (!endLoop)
     {
-        selectedStudent s;
-        s.studentID   = fsRes->getString("studentID");
-        s.fullName    = fsRes->getString("fullName");
-        s.age         = calcAge(fsRes->getString("ic"));
-        s.curRank     = fsRes->getString("rankID");
-        s.nextRank    = getNextRank(s.curRank); // Map to next rankID according to your belt hierarchy
-        foundList.push_back(s);
+        //clear the found list vector
+        foundList.clear();
+
+        // Display selected student list
+        if (!selectedList.empty()) {
+            cout << "\n╭────────────────────────────────────────────────────────────────╮" << endl;
+            cout << "│                SELECTED STUDENTS FOR PROMOTION                 │" << endl;
+            cout << "├──────┬─────────────────────────────────────┬──────────┬────────┤" << endl;
+            cout << "│ ID   │ NAME                                │ CURRENT  │ AFTER  │" << endl;
+            cout << "├──────┼─────────────────────────────────────┼──────────┼────────┤" << endl;
+
+            for (size_t i = 0; i < selectedList.size(); ++i) {
+                const selectedStudent& sl = selectedList[i];
+                cout <<"│ "<< left  << setw(4)  << sl.studentID << " │ "
+                    << left  << setw(35) << sl.fullName  << " │ "
+                    << left  << setw(8)  << getRankColor(sl.curRank)  << " │ "
+                    << left  << setw(6)  << getRankColor(sl.nextRank) << " │" 
+                    << endl;
+            }
+
+            cout << "╰──────┴─────────────────────────────────────┴──────────┴────────╯" << endl;
+        }
+
+        cout<<"\nEnter 0 or cancel to cancel"<<endl;
+        cout<<"Enter name to find"<<endl;
+        cout<<" >> "<<GREEN;
+        getline(cin >> ws, name);
+        cout<<RESET;
+
+        if(name=="0" ||name=="cancel"){
+            endLoop=true;
+        }
+
+        PreparedStatement* fsStmt=con->prepareStatement(findStudentSQL);
+
+        fsStmt->setString(1, ("%"+name+"%"));
+        fsStmt->setString(2, instructorID);
+
+        ResultSet* fsRes=fsStmt->executeQuery();
+        
+        //insert found students into the found list
+        while (fsRes->next())   
+        {
+            selectedStudent s;
+            s.studentID   = fsRes->getString("studentID");
+            s.fullName    = fsRes->getString("fullName");
+            s.age         = calcAge(fsRes->getString("ic"));
+            s.curRank     = fsRes->getString("rankID");
+            s.nextRank    = getNextRank(s.curRank); // Map to next rankID according to your belt hierarchy
+            foundList.push_back(s);
+        }
+
+        delete fsRes;
+        delete fsStmt;
+
+        if(foundList.empty()){
+            if(name!="0" && name!="cancel"){
+                cout<<YELLOW<<"[ ERROR ]"<<" Did not found any student named "<<name<<RESET<<endl;
+            }
+
+        }else if (foundList.size()==1){ //if only 1 student found
+            cout<<GREEN<<"\nFound 1 student"<<RESET<<endl;
+            cout << "    " << left << setw(40) << "NAME" << setw(15) << "RANK" << "AGE" << endl;
+            cout << "─────────────────────────────────────────────────────────────" << endl;
+
+            cout<< left <<"  • "<< setw(40) << foundList[0].fullName
+                << left << setw(15) << getRankColor(foundList[0].curRank)
+                << right << setw(3) << foundList[0].age
+                << endl;
+
+            cout<<BLUE<<"\nSelect this student? (y/n): ";
+            getline(cin>>ws,choice);
+            cout<<RESET;
+            if(choice=="y" || choice=="Y"){
+                selectedList.push_back(foundList[0]);
+                cout <<GREEN<< "Student added to selection."<<RESET << endl;
+            }else {
+                cout <<RED<< "Selection cancelled." <<RESET << endl;
+            }
+        }else{ //found more than 1 students
+            cout<<GREEN<<"\nFound "<<foundList.size()<<" student"<<RESET<<endl;
+            cout << "    " << left << setw(40) << "NAME" << setw(15) << "RANK" << "AGE" << endl;
+            cout << "─────────────────────────────────────────────────────────────" << endl;
+            
+            for (size_t i = 0; i < foundList.size(); ++i) {
+                cout << "[" << (i + 1) << "] "
+                    << left << setw(40) << foundList[i].fullName
+                    << left << setw(15) << getRankColor(foundList[i].curRank)
+                    << right << setw(3) << foundList[i].age
+                    << endl;
+            }
+            int choiceIndex=0;
+            cout << "\nEnter student number to select (1-" << foundList.size() << ") or 0 to cancel: ";
+            cin>>choiceIndex;
+                
+                
+
+            if(choiceIndex >=1 && choiceIndex <= foundList.size()){
+                string confirm;
+
+                cout<<BLUE<<"Confirm selection of "<<foundList[choiceIndex-1].fullName<<"? (y/n): "<<RESET;
+                getline(cin>>ws,confirm);
+
+                if (confirm == "y" || confirm == "Y"){
+                    selectedList.push_back(foundList[choiceIndex - 1]);
+                    cout <<GREEN<< "Student added to selection." <<RESET<< endl;
+                }else {
+                    cout <<RED<< "Selection aborted." <<RESET<< endl;
+
+                }
+                
+            }else if(choiceIndex == 0) {
+                cout <<YELLOW<< "Operation cancelled" <<RESET<< endl;
+                
+            }else{
+                invalidInput();
+            }
+        }
     }
 
-    delete fsRes;
-    delete fsStmt;
-
-    if(foundList.empty()){
-        cout<<"No student found :("<<endl;
+    if (selectedList.empty()) {
+        cout<<YELLOW<<"[ WARNING ] No selected student. Aborting promotion"<<RESET<<endl;
+        PETC();
         return;
+    }
 
-    }else if (foundList.size()==1){ //if only 1 student found
-        cout<<"\nFound 1 student"<<endl;
-        cout<< left << setw(40) << foundList[0].fullName
-            << left << setw(15) << getRankColor(foundList[0].curRank)
-            << right << setw(3) << foundList[0].age
-            << endl;
-
-        cout<<"Select this student? (y/n): ";
-        getline(cin>>ws,choice);
-
-        if(choice=="y" || choice=="Y"){
-            selectedList.push_back(foundList[0]);
-            cout << "Student added to selection." << endl;
-        }else {
-            cout << "Selection cancelled." << endl;
-            return;
-        }
-    }else{ //found more than 1 students
-        cout<<"\nFound "<<foundList.size()<<" student"<<endl;
-        cout << "    " << left << setw(40) << "NAME" << setw(15) << "RANK" << "AGE" << endl;
-        cout << "─────────────────────────────────────────────────────────────" << endl;
-        
-        for (size_t i = 0; i < foundList.size(); ++i) {
-            cout << "[" << (i + 1) << "] "
-                 << left << setw(40) << foundList[i].fullName
-                 << left << setw(15) << getRankColor(foundList[i].curRank)
-                 << right << setw(3) << foundList[i].age
-                 << endl;
-        }
-        int choiceIndex=0;
-        cout << "\nEnter student number to select (1-" << foundList.size() << ") or 0 to cancel: ";
-        cin>>choiceIndex;
-            
-            
-
-        if(choiceIndex >=1 && choiceIndex <= foundList.size()){
-            string confirm;
-
-            cout<<"Confirm selection of "<<foundList[choiceIndex-1].fullName<<"? (y/n): ";
-            getline(cin>>ws,confirm);
-
-            if (confirm == "y" || confirm == "Y"){
-                selectedList.push_back(foundList[choiceIndex - 1]);
-                cout << "Student added to selection." << endl;
-            }else {
-                cout << "Selection aborted." << endl;
-                return;
-            }
-            
-        }else {
-            cout << "Operation cancelled or invalid choice." << endl;
-            return;
-        }
-
-        if (selectedList.empty()) {
-            cout<<"No selected student"<<endl;
-            return;
-        }
-        
-
-        // Display all selected students
-        cout << "\n================ SELECTED STUDENTS FOR PROMOTION ================" << endl;
-        cout << left << setw(10) << "ID" << setw(35) << "NAME" << setw(15) << "CURRENT RANK" << endl;
-        cout << "─────────────────────────────────────────────────────────────────" << endl;
-        for (size_t i=0; i<selectedList.size();++i){
-            selectedStudent sl=selectedList[i];
-            cout << left << setw(10) << sl.studentID
-                << setw(35) << sl.fullName
-                << setw(15) << getRankColor(sl.curRank) << endl;
-        }
-
-        // Final Promotion Confirmation
+    // Final Promotion Confirmation
+    bool validOption=false;
+    while (!validOption)
+    {
         string finalConfirm;
-        cout << "\nConfirm promotion of all selected student(s)? (y/n): ";
+        cout << "\nConfirm promotion of all selected student(s)? (y/n): ";     
         getline(cin>>ws, finalConfirm);
 
         if (finalConfirm=="y" || finalConfirm=="Y"){
@@ -479,20 +514,26 @@ void DatabaseManager::promoteStudents(string instructorID){
                 pStmt->setString(2,sl.studentID);
                 pStmt->setString(3,instructorID);
                 pStmt->executeUpdate();
+                cout <<GREEN<< "Successfully promoted " << sl.fullName << "!" <<RESET << endl;
 
-                cout << "✓ Successfully promoted " << sl.fullName << "!" << endl;
             }
-
             delete pStmt;
+            PETC();
+            return;
+
+        }else if(finalConfirm=="n" || finalConfirm=="N"){
+            cout <<RED<< "Promotion cancelled." <<RESET<< endl;
+            PETC();
+            return;
+
         }else{
-            cout << "Promotion cancelled." << endl;
+            invalidInput();
         }
     }
     
-
-    
     
 }   //promote students
+   
 
 string DatabaseManager::getNextRank(string rankID){
     ostringstream oss;

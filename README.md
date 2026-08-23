@@ -29,7 +29,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 ### Instructor
 - [x] Pending approval
 - [x] view students
-- [ ] promote student
+- [x] promote student
 - [ ] withdrawal requests
 
 ### Admin
@@ -43,4 +43,4 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ##BUGS
 
-- Cant read input on instructor view student function
+- ~Cant read input on instructor view student function~

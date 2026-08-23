@@ -341,6 +341,18 @@ void DatabaseManager::promoteStudents(string instructorID){
     cin.ignore();
     getline(cin, name);
 
+    struct selectedStudent{
+        string studentID;
+        string fullName;
+        int age;
+        string curRank;
+        string nextRank;
+    };
+
+    vector<selectedStudent> foundList;
+    vector<selectedStudent> selectedList;
+    
+    //find student from name
     string findStudentSQL = 
         "select "
         "   s.studentID, s.fullName, s.ic, "
@@ -359,6 +371,19 @@ void DatabaseManager::promoteStudents(string instructorID){
 
     ResultSet* fsRes=fsStmt->executeQuery();
     
+    while (fsRes->next())   
+    {
+        selectedStudent s;
+        s.studentID   = fsRes->getString("studentID");
+        s.fullName    = fsRes->getString("fullName");
+        s.age         = calcAge(fsRes->getString("ic"));
+        s.curRank     = fsRes->getString("rankID");
+        s.nextRank    = ""; // Map to next rankID according to your belt hierarchy
+        foundList.push_back(s);
+    }
+    
+
+    selectedStudent ss;
     if (fsRes->rowsCount()==0)
     {
         cout<<"No student found :("<<endl;
@@ -374,10 +399,18 @@ void DatabaseManager::promoteStudents(string instructorID){
 
         cout<<"Select this student? (y/n)";
         getline(cin,choice);
+
+        if(choice=="y"||choice=="Y"){
+            cout<<"Student selected"<<endl;
+            ss.studentID=fsRes->getString("studentID");
+            ss.fullName=fsRes->getString("fullName");
+            ss.age=calcAge(fsRes->getString("ic"));
+            ss.curRank=fsRes->getString("rankID");
+        }
         
     }else{
         cout<<"Found "<<fsRes->rowsCount()<<" student"<<endl;
-        cout<<"    "<<left<<setw(40)<<"NAME"<<setw(10)<<"RANK"<<"AGE"<<endl;
+        cout<<WHITE<<"    "<<left<<setw(40)<<"NAME"<<setw(10)<<"RANK"<<"AGE"<<RESET<<endl;
         int foundCount=0;
         while (fsRes->next())
         {
@@ -386,10 +419,36 @@ void DatabaseManager::promoteStudents(string instructorID){
             cout <<"["<<foundCount<<"] "
                 <<left<<setw(40)<< fsRes->getString("fullName")
                 <<left<<setw(10)<<fsRes->getString("color")
-                <<left<<calcAge(fsRes->getString("ic"))<<endl;
+                <<right<<setw(3)<<calcAge(fsRes->getString("ic"))
+                <<endl;
         }
     }
     string promoteSql = 
         "insert into rank_history(rankID, studentID, date_achieved, instructorID) "
         "values(?,?,curdate(),?)";
 }   //promote students
+
+string DatabaseManager::getNextRank(string rankID){
+    ostringstream oss;
+    int curNum=stoi(rankID.substr(1));
+    int nextNum=curNum+1;
+    
+    if (curNum < 1 || curNum > 7)
+    {
+        return "what?";
+    }
+    
+    if (curNum != 7 )
+    {
+        //combine char r and next number
+        oss<<'r'<<nextNum;
+        return oss.str();
+        
+    }else if(curNum == 7){
+        cout<<"Reached highest rank!!"<<endl;
+        return rankID;
+    }
+    
+
+    return "how you reach here?";
+}   //get next rank

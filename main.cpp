@@ -58,6 +58,14 @@ int main()
                 dbm.allStudents();
                 break;
             
+            case '5':
+                cout<<dbm.getNextRank("r1")<<endl;
+                cout<<dbm.getNextRank("r6")<<endl;
+                cout<<dbm.getNextRank("r7")<<endl;
+                cout<<dbm.getNextRank("r0")<<endl;
+                cout<<dbm.getNextRank("r8")<<endl;
+                break;
+            
             case '9':
                 dbm.testColor("mibomboclaat");
                 break;

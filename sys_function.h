@@ -79,6 +79,7 @@ public:
     void studentApproval(string instructorID, string classSlot);
     void viewStudents(string instructorID, string classDay);
     void promoteStudents(string instructorID);
+    string getNextRank(string rankID);
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();

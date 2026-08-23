@@ -40,3 +40,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [ ] view student performance
 - [ ] view anually new student vs withdrawal (graph like)
 - [x] Monthly summary
+
+##BUGS
+
+- Cant read input on instructor view student function

@@ -25,9 +25,14 @@ private:
     string entityID;    //s00x , p00x, i00x
     
     //color variables
+    const string BLACK   = "\033[1;30m";
     const string RED   = "\033[1;31m";
     const string GREEN = "\033[1;32m";
     const string YELLOW = "\033[1;33m";
+    const string BLUE = "\033[1;34m";
+    const string PURPLE = "\033[1;35m";
+    const string CYAN = "\033[1;36m";
+    const string WHITE = "\033[1;37m";
     const string RESET = "\033[0m";
 
 public:
@@ -46,6 +51,7 @@ public:
     void PETC(); // press enter to continue
     void invalidInput();
     void clearScreen();
+    void testColor(string str);
 
     //function with RETURN value
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
@@ -72,6 +78,7 @@ public:
     void instructorDashboard();
     void studentApproval(string instructorID, string classSlot);
     void viewStudents(string instructorID, string classDay);
+    void promoteStudents(string instructorID);
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();

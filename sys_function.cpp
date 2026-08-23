@@ -620,3 +620,15 @@ string DatabaseManager::toUpperCase(string str){
     transform(str.begin(), str.end(), str.begin(), ::toupper);
     return str;
 }   //to upper case
+
+void DatabaseManager::testColor(string str){
+    cout<<BLACK<<str<<" "
+        <<RED<<str<<" "
+        <<GREEN<<str<<" "
+        <<YELLOW<<str<<" "
+        <<BLUE<<str<<" "
+        <<PURPLE<<str<<" "
+        <<CYAN<<str<<" "
+        <<WHITE<<str<<" "
+        <<RESET<<endl;
+}   //test color

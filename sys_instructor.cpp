@@ -73,7 +73,7 @@ void DatabaseManager::instructorDashboard(){
             break;
         
         case '3':
-            //promote
+            promoteStudents(entityID);
             break;
         
         case '4':
@@ -278,10 +278,10 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
     string tableRank="";
     
     for(size_t i=0;i<studentList.size(); i++){
-
+        student sl=studentList[i];
         //print header
         if (studentList[i].rank != tableRank){
-            tableRank=studentList[i].rank;
+            tableRank=sl.rank;
 
             int studentThisRankCount =0;
             for(int j =0;j<studentList.size(); j++){
@@ -309,9 +309,87 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         }
     }
 
+    string choice;
+    bool endLoop=false;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    cout << "[ AVAILABLE ACTIONS ]" << endl;
+    cout << "  [1] Promote Student" << endl;
+    cout << "  [0] Exit" << endl;
+    cin.ignore();
+    getline(cin, choice);
 
+    while (!endLoop)
+    {
+        if(choice=="0") endLoop=true;
+        else if (choice =="1"){
+
+        }
+    }
+    
 
     PETC();
     return;
 
 } //view students
+
+void DatabaseManager::promoteStudents(string instructorID){
+    string name;
+    string choice;
+
+    cout<<"Enter name "<<endl;
+    cout<<" >> ";
+    cin.ignore();
+    getline(cin, name);
+
+    string findStudentSQL = 
+        "select "
+        "   s.studentID, s.fullName, s.ic, "
+        "   rh.rankID, r.color "
+        "from student s "
+        "join rank_history rh on rh.studentID = s.studentID "
+        "   and rh.date_achieved = "
+        "       (select date_achieved from rank_history where studentID = s.studentID "
+        "       order by date_achieved desc limit 1) "
+        "join rank r on r.rankID = rh.rankID "
+        "where s.fullname like ?";
+
+    PreparedStatement* fsStmt=con->prepareStatement(findStudentSQL);
+
+    fsStmt->setString(1, ("%"+name+"%"));
+
+    ResultSet* fsRes=fsStmt->executeQuery();
+    
+    if (fsRes->rowsCount()==0)
+    {
+        cout<<"No student found :("<<endl;
+        return;
+
+    }else if(fsRes->rowsCount()==1){
+        // cout<<"Found "<<fsRes->rowsCount()<<" student"<<endl;
+        while (fsRes->next())
+        {
+            
+            cout << fsRes->getString("fullName")<<endl;
+        }
+
+        cout<<"Select this student? (y/n)";
+        getline(cin,choice);
+        
+    }else{
+        cout<<"Found "<<fsRes->rowsCount()<<" student"<<endl;
+        cout<<"    "<<left<<setw(40)<<"NAME"<<setw(10)<<"RANK"<<"AGE"<<endl;
+        int foundCount=0;
+        while (fsRes->next())
+        {
+            ++foundCount;
+            
+            cout <<"["<<foundCount<<"] "
+                <<left<<setw(40)<< fsRes->getString("fullName")
+                <<left<<setw(10)<<fsRes->getString("color")
+                <<left<<calcAge(fsRes->getString("ic"))<<endl;
+        }
+    }
+    string promoteSql = 
+        "insert into rank_history(rankID, studentID, date_achieved, instructorID) "
+        "values(?,?,curdate(),?)";
+}   //promote students

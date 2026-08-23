@@ -34,6 +34,7 @@ int main()
             cout<<"  [2] Register New Account"<<endl;
             cout<<"  [3] view summary"<<endl;
             cout<<"  [4] test view students"<<endl;
+            cout<<"  [9] show terminal colors"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout<<"\nSelect an option [0-2]: ";
             cin>>choice;
@@ -57,9 +58,8 @@ int main()
                 dbm.allStudents();
                 break;
             
-            case '5':
-                dbm.viewStudents("i001","monday");
-                dbm.viewStudents("i002","saturday");
+            case '9':
+                dbm.testColor("mibomboclaat");
                 break;
             
             case '0':

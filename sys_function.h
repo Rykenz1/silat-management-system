@@ -80,6 +80,7 @@ public:
     void viewStudents(string instructorID, string classDay);
     void promoteStudents(string instructorID);
     string getNextRank(string rankID);
+    string getRankColor(string rankID);
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();

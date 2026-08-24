@@ -28,7 +28,7 @@ int main()
         while (running)
         {
             //display main menu
-            dbm.clearScreen();
+            // dbm.clearScreen();
             cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
             cout << "│                           SILAT MANAGEMENT SYSTEM                           │" << endl;
             cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;

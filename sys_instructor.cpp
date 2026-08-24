@@ -13,12 +13,24 @@ void DatabaseManager::instructorDashboard(){
     string joinDate;
     string classSlot;
     int pendingCount=0;
+    int withdrawCount=0;
     char choice;
     bool endLoop=false;
 
     while(!endLoop){
         //get instructor info
-        string sqlStatement="SELECT i.*, sl.classDay, COUNT(s.studentID) AS pendingCount FROM instructor i LEFT JOIN student s ON i.slotID = s.slotID AND s.stdStatus = 'pending' join slot sl on sl.slotID = i.slotID WHERE i.accountID = ?";
+        string sqlStatement=
+            "SELECT "
+            "i.*, sl.classDay, "
+            "COUNT(s.studentID) AS pendingCount, "
+            "COUNT(w.studentID) AS withdrawCount "
+            "FROM instructor i "
+            "LEFT JOIN student s ON i.slotID = s.slotID "
+            "   AND s.stdStatus = 'pending' "
+            "join slot sl on sl.slotID = i.slotID "
+            "left join withdraw w on w.instructorID = i.instructorID "
+            "   AND w.wthStatus = 'pending' "
+            "WHERE i.accountID = ?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
 
@@ -31,13 +43,15 @@ void DatabaseManager::instructorDashboard(){
             entityID=instructorID;
             fName = res->getString("fullName");
             userName=fName;
-            entityID=instructorID;
             homeAdd = res->getString("homeAdd");
             phoneNum = res->getString("phoneNum");
             joinDate = res->getString("joinDate");
             classSlot = res->getString("classDay");
             pendingCount = stoi(res->getString("pendingCount"));
+            withdrawCount = stoi(res->getString("withdrawCount"));
         }
+
+        
 
 
         //rendering
@@ -50,7 +64,7 @@ void DatabaseManager::instructorDashboard(){
         cout << "[ AVAILABLE ACTIONS ]" << endl;
         cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;
         cout << "  [2] View Students" << endl;
-        cout << "  [3] Withdrawal Requests (0)" << endl;
+        cout << "  [3] Withdrawal Requests ("<<(withdrawCount!=0? (RED):(RESET))<<withdrawCount<<RESET<<")"<< endl;
         cout << "  [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
@@ -75,7 +89,7 @@ void DatabaseManager::instructorDashboard(){
             break;
         
         case '3':
-            //withdrawal
+            studentWithrawal(instructorID);
             break;
 
         default:
@@ -580,3 +594,158 @@ string DatabaseManager::getRankColor(string rankID){
     return "??";
     
 }   //get rank color
+
+void DatabaseManager::studentWithrawal(string instructorID){
+
+    struct studentRequest{
+        string studentID;
+        string withdrawID;
+        string studentName;
+        int age;
+        string curRank;
+        string reason;
+    };
+
+    vector<studentRequest> requestList;
+
+    //get all student under this instructor from withdraw table
+    string getStdSql = 
+        "select "
+        "s.studentID, s.fullName, s.ic, rh.rankID,w.withdrawID, w.reason "
+        "from student s "
+        "join withdraw w on w.studentID = s.studentID"
+        "   and w.wthStatus ='pending' "
+        "join rank_history rh on rh.studentID = s.studentID "
+        "   and rh.rankID = (select "
+        "       rankID from rank_history where studentID = s.studentID "
+        "       order by rankID desc limit 1) "
+        "where s.instructorID = ? "
+        "order by w.wthDate asc, w.withdrawID asc";
+    
+    PreparedStatement* wdrwStmt = con->prepareStatement(getStdSql);
+    wdrwStmt->setString(1,instructorID);
+
+    ResultSet* wdrwRes=wdrwStmt->executeQuery();
+
+    while (wdrwRes->next()) 
+    {
+        studentRequest sr;
+
+        sr.withdrawID=wdrwRes->getString("withdrawID");
+        sr.studentID=wdrwRes->getString("studentID");
+        sr.studentName=wdrwRes->getString("fullName");
+        sr.age=calcAge(wdrwRes->getString("ic"));
+        sr.curRank=getRankColor(wdrwRes->getString("rankID"));
+        sr.reason=wdrwRes->getString("reason");
+
+        requestList.push_back(sr);
+    }
+    
+    delete wdrwRes;
+    delete wdrwStmt;
+
+    // Check if there are any requests
+    if (requestList.empty()) {
+        cout << "\n  No pending withdrawal requests found.\n";
+        PETC();
+        return;
+    }
+    
+    //diplay in table view (studentID, name, currank, age, reason) sory by oldest date
+    // 2. Display formatted table view
+    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                              PENDING WITHDRAWAL REQUESTS                               │" << endl;
+    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
+    cout << " " << left << setw(12) << "WITHDRAW ID" 
+         << setw(12) << "STUDENT ID" 
+         << setw(30) << "NAME" 
+         << setw(6)  << "AGE" 
+         << setw(15) << "RANK" << endl;
+    cout << "──────────────────────────────────────────────────────────────────────────────────────────" << endl;
+    
+    for (size_t i = 0; i < requestList.size(); ++i) {
+        studentRequest rl = requestList[i];
+        cout << " " << left << setw(12) << rl.withdrawID 
+             << setw(12) << rl.studentID 
+             << setw(30) << rl.studentName 
+             << right << setw(3) << rl.age << "   " 
+             << left << setw(15) << rl.curRank << endl;
+        cout << "   Reason: \"" << rl.reason << "\"\n" << endl;
+    }
+
+    //user enter studentID
+    string input;
+    string choice;
+    cout << "──────────────────────────────────────────────────────────────────────────────────────────" << endl;
+    cout << "Enter studentID to select (or '0' / 'cancel' to abort): ";
+    getline(cin>>ws, input);
+
+    if(input == "0" || input == "cancel"){
+        cout<<"\nAborting process..."<<endl;
+        PETC();
+        return;
+    }
+
+    //approve or reject withdraw request
+    //if approved, update wthStatus on withdraw table to 'approved' and update stdStatus to 'withdrawn'
+    //if rejected, update wthStatus on withdraw table to 'rejected'
+    int selectedIndex = -1;
+    for (size_t i = 0; i < requestList.size(); ++i) {
+        if (requestList[i].studentID == input) {
+            selectedIndex = i;
+            break;
+        }
+    }
+
+    if (selectedIndex == -1) {
+        cout << "\n[ ERROR ] Student ID '" << input << "' not found in the pending list." << endl;
+        PETC();
+        return;
+    }
+    studentRequest target = requestList[selectedIndex];
+
+    // 5. Review & Decision
+    cout << "\n[ SELECTED STUDENT ]" << endl;
+    cout << "  • ID     : " << target.studentID << endl;
+    cout << "  • Name   : " << target.studentName << endl;
+    cout << "  • Rank   : " << target.curRank << endl;
+    cout << "  • Reason : " << target.reason << endl;
+
+    cout << "\nApprove " << target.studentName << "'s withdrawal? (y/n): ";
+    getline(cin >> ws, choice);
+
+    string updateWithdrawSql = "UPDATE withdraw SET wthStatus = ? WHERE withdrawID = ?";
+
+    PreparedStatement* updWthStmt = con->prepareStatement(updateWithdrawSql);
+    if (choice == "y" || choice == "Y") {
+        
+        // Update withdraw table to 'approved'
+        updWthStmt->setString(1, "approved");
+        updWthStmt->setString(2, target.withdrawID);
+        updWthStmt->executeUpdate();
+        delete updWthStmt;
+
+        // Update student table stdStatus to withdrawn
+        string updateStudentSql = "UPDATE student SET stdStatus = 'withdrawn' WHERE studentID = ?";
+        PreparedStatement* updStdStmt = con->prepareStatement(updateStudentSql);
+        updStdStmt->setString(1, target.studentID);
+        updStdStmt->executeUpdate();
+        delete updStdStmt;
+
+        cout << "\n[ SUCCESS ] Withdrawal approved. Student status updated to 'withdraw'." << endl;
+    } else if (choice == "n" || choice == "N") {
+        
+        // Update withdraw table to 'rejected'
+        updWthStmt->setString(1, "rejected");
+        updWthStmt->setString(2, target.withdrawID);
+        updWthStmt->executeUpdate();
+        delete updWthStmt;
+
+        cout << "\n[ PROCESSED ] Withdrawal request rejected." << endl;
+    } else {
+        invalidInput();
+    }
+    
+    
+    PETC();
+}   //student withdrawal

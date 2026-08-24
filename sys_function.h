@@ -81,6 +81,7 @@ public:
     void promoteStudents(string instructorID);
     string getNextRank(string rankID);
     string getRankColor(string rankID);
+    void studentWithrawal(string instructorID);
     
     //=====ADMIN FUNCTIONS=====
     void adminDashboard();

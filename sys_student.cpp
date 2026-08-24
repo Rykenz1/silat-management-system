@@ -208,7 +208,7 @@ void DatabaseManager::studenDashboard(){
         cout << "  • Student Name          : "<< fName << endl;
         cout << "  • Class Slot            : "<< classSlot << endl;
         cout << "  • Current Rank          : "<< curRank << endl;
-        cout << "  • Status                : "<< stdStatus << endl;
+        cout << "  • Status                : "<< (stdStatus == "withdrawn" ? (RED + stdStatus + RESET) : (GREEN + stdStatus + RESET)) << endl;
         cout << "  • Fee Status            : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         
         //if have withdraw request

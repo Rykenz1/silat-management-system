@@ -606,7 +606,7 @@ void DatabaseManager::studentWithrawal(string instructorID){
         string reason;
     };
 
-    vector<studentRequest> requestList;
+    bool endLoop=false;
 
     //get all student under this instructor from withdraw table
     string getStdSql = 
@@ -621,131 +621,158 @@ void DatabaseManager::studentWithrawal(string instructorID){
         "       order by rankID desc limit 1) "
         "where s.instructorID = ? "
         "order by w.wthDate asc, w.withdrawID asc";
-    
-    PreparedStatement* wdrwStmt = con->prepareStatement(getStdSql);
-    wdrwStmt->setString(1,instructorID);
+      
+    vector<studentRequest> requestList;
 
-    ResultSet* wdrwRes=wdrwStmt->executeQuery();
-
-    while (wdrwRes->next()) 
+    while (!endLoop)
     {
-        studentRequest sr;
+        
+        requestList.clear();
 
-        sr.withdrawID=wdrwRes->getString("withdrawID");
-        sr.studentID=wdrwRes->getString("studentID");
-        sr.studentName=wdrwRes->getString("fullName");
-        sr.age=calcAge(wdrwRes->getString("ic"));
-        sr.curRank=getRankColor(wdrwRes->getString("rankID"));
-        sr.reason=wdrwRes->getString("reason");
+        PreparedStatement* wdrwStmt = con->prepareStatement(getStdSql);
+        wdrwStmt->setString(1,instructorID);
 
-        requestList.push_back(sr);
-    }
-    
-    delete wdrwRes;
-    delete wdrwStmt;
+        ResultSet* wdrwRes=wdrwStmt->executeQuery();
 
-    // Check if there are any requests
-    if (requestList.empty()) {
-        cout << "\n  No pending withdrawal requests found.\n";
-        PETC();
-        return;
-    }
-    
-    //diplay in table view (studentID, name, currank, age, reason) sory by oldest date
-    // 2. Display formatted table view
-    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                              PENDING WITHDRAWAL REQUESTS                               │" << endl;
-    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
-    cout << " " << left << setw(12) << "WITHDRAW ID" 
-         << setw(12) << "STUDENT ID" 
-         << setw(30) << "NAME" 
-         << setw(6)  << "AGE" 
-         << setw(15) << "RANK" << endl;
-    cout << "──────────────────────────────────────────────────────────────────────────────────────────" << endl;
-    
-    for (size_t i = 0; i < requestList.size(); ++i) {
-        studentRequest rl = requestList[i];
-        cout << " " << left << setw(12) << rl.withdrawID 
-             << setw(12) << rl.studentID 
-             << setw(30) << rl.studentName 
-             << right << setw(3) << rl.age << "   " 
-             << left << setw(15) << rl.curRank << endl;
-        cout << "   Reason: \"" << rl.reason << "\"\n" << endl;
-    }
+        while (wdrwRes->next()) 
+        {
+            studentRequest sr;
 
-    //user enter studentID
-    string input;
-    string choice;
-    cout << "──────────────────────────────────────────────────────────────────────────────────────────" << endl;
-    cout << "Enter studentID to select (or '0' / 'cancel' to abort): ";
-    getline(cin>>ws, input);
+            sr.withdrawID=wdrwRes->getString("withdrawID");
+            sr.studentID=wdrwRes->getString("studentID");
+            sr.studentName=wdrwRes->getString("fullName");
+            sr.age=calcAge(wdrwRes->getString("ic"));
+            sr.curRank=getRankColor(wdrwRes->getString("rankID"));
+            sr.reason=wdrwRes->getString("reason");
 
-    if(input == "0" || input == "cancel"){
-        cout<<"\nAborting process..."<<endl;
-        PETC();
-        return;
-    }
+            requestList.push_back(sr);
+        }
+        
+        delete wdrwRes;
+        delete wdrwStmt;
 
-    //approve or reject withdraw request
-    //if approved, update wthStatus on withdraw table to 'approved' and update stdStatus to 'withdrawn'
-    //if rejected, update wthStatus on withdraw table to 'rejected'
-    int selectedIndex = -1;
-    for (size_t i = 0; i < requestList.size(); ++i) {
-        if (requestList[i].studentID == input) {
-            selectedIndex = i;
-            break;
+        
+        //diplay in table view (studentID, name, currank, age, reason) sory by oldest date
+        cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                              PENDING WITHDRAWAL REQUESTS                               │" << endl;
+        cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
+
+        //if no request, returnws
+        if (requestList.empty()) {
+            cout << "\n  No pending withdrawal requests found.\n";
+            PETC();
+            return;
+        }
+        
+        //print header
+        cout << "\n╭──────┬─────────────────────────────────────┬─────┬─────────────────────────────────────╮" << endl;
+
+        cout << "│ " << left << setw(4) << " ID" 
+            << " │ " << setw(35) << "NAME" 
+            << " │ " << right << setw(3)  << "AGE" 
+            << " │ " << left << setw(10) << "RANK" 
+            << right << setw(29)<< " │" << endl;
+        
+        for (size_t i = 0; i < requestList.size(); ++i) {
+            studentRequest rl = requestList[i];
+            string color =(i%2 == 0 ? BLUE:CYAN);
+
+            if (i==0)
+            {
+                cout << "├──────┼─────────────────────────────────────┼─────┼─────────────────────────────────────┤"<<endl;
+
+            }else{
+                cout << "├──────┬─┴───────────────────────────────────┬─────┬─────────────────────────────────────┤"<<endl;
+
+            }
+            
+            //cout << "├──────┼─────────────────────────────────────┼─────┼─────────────────────────────────────┤"<<endl;
+            cout << RESET << "│ " << color << left << setw(4)  << rl.studentID 
+                << RESET << " │ " << color << setw(35)<< rl.studentName 
+                << RESET << " │ " << color << right << setw(3) << rl.age 
+                << RESET << " │ " << color << left << setw(10) << rl.curRank 
+                << RESET << right << setw(29)<< " │" << endl;;
+            cout << "├──────┴─┬───────────────────────────────────┴─────┴─────────────────────────────────────┤"<<endl;
+            cout << "│ " << color << "Reason" << RESET <<" │ " << color << left <<setw(77) << rl.reason << RESET <<" │"<< endl;
+        }
+        cout << "╰────────┴───────────────────────────────────────────────────────────────────────────────╯" << endl;
+
+
+        //user enter studentID
+        string input;
+        string choice;
+        cout << "──────────────────────────────────────────────────────────────────────────────────────────" << endl;
+        cout << "Enter studentID to select (or '0' / 'cancel' to abort): ";
+        getline(cin>>ws, input);
+
+        if(input == "0" || input == "cancel"){
+            cout<<"\nAborting process..."<<endl;
+            PETC();
+            return;
+        }
+
+        //approve or reject withdraw request
+        //if approved, update wthStatus on withdraw table to 'approved' and update stdStatus to 'withdrawn'
+        //if rejected, update wthStatus on withdraw table to 'rejected'
+        int selectedIndex = -1;
+        for (size_t i = 0; i < requestList.size(); ++i) {
+            if (requestList[i].studentID == input) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        if (selectedIndex == -1) {
+            cout <<YELLOW<< "\n[ ERROR ]"<<RESET<<" Student ID '" << input << "' not found in the pending list." << endl;
+            PETC();
+            continue;
+        }
+
+        studentRequest target = requestList[selectedIndex];
+
+        // 5. Review & Decision
+        cout << "\n[ SELECTED STUDENT ]" << endl;
+        cout << "  • ID     : " << target.studentID << endl;
+        cout << "  • Name   : " << target.studentName << endl;
+        cout << "  • Rank   : " << target.curRank << endl;
+        cout << "  • Reason : " << target.reason << endl;
+
+        cout << "\nApprove " << target.studentName << "'s withdrawal? (y/n): ";
+        getline(cin >> ws, choice);
+
+        string updateWithdrawSql = "UPDATE withdraw SET wthStatus = ? WHERE withdrawID = ?";
+
+        PreparedStatement* updWthStmt = con->prepareStatement(updateWithdrawSql);
+        if (choice == "y" || choice == "Y") {
+            
+            // Update withdraw table to 'approved'
+            updWthStmt->setString(1, "approved");
+            updWthStmt->setString(2, target.withdrawID);
+            updWthStmt->executeUpdate();
+            delete updWthStmt;
+
+            // Update student table stdStatus to withdrawn
+            string updateStudentSql = "UPDATE student SET stdStatus = 'withdrawn' WHERE studentID = ?";
+            PreparedStatement* updStdStmt = con->prepareStatement(updateStudentSql);
+            updStdStmt->setString(1, target.studentID);
+            updStdStmt->executeUpdate();
+            delete updStdStmt;
+
+            clearScreen();
+            cout << GREEN << "\n[ SUCCESS ]"<<RESET<<" Withdrawal approved. Student status updated to 'withdraw'." << endl;
+        } else if (choice == "n" || choice == "N") {
+            
+            // Update withdraw table to 'rejected'
+            updWthStmt->setString(1, "rejected");
+            updWthStmt->setString(2, target.withdrawID);
+            updWthStmt->executeUpdate();
+            delete updWthStmt;
+
+            cout <<YELLOW<< "\n[ NOTICE ]"<<RESET<<" Withdrawal request rejected." << endl;
+        } else {
+            invalidInput();
         }
     }
-
-    if (selectedIndex == -1) {
-        cout << "\n[ ERROR ] Student ID '" << input << "' not found in the pending list." << endl;
-        PETC();
-        return;
-    }
-    studentRequest target = requestList[selectedIndex];
-
-    // 5. Review & Decision
-    cout << "\n[ SELECTED STUDENT ]" << endl;
-    cout << "  • ID     : " << target.studentID << endl;
-    cout << "  • Name   : " << target.studentName << endl;
-    cout << "  • Rank   : " << target.curRank << endl;
-    cout << "  • Reason : " << target.reason << endl;
-
-    cout << "\nApprove " << target.studentName << "'s withdrawal? (y/n): ";
-    getline(cin >> ws, choice);
-
-    string updateWithdrawSql = "UPDATE withdraw SET wthStatus = ? WHERE withdrawID = ?";
-
-    PreparedStatement* updWthStmt = con->prepareStatement(updateWithdrawSql);
-    if (choice == "y" || choice == "Y") {
-        
-        // Update withdraw table to 'approved'
-        updWthStmt->setString(1, "approved");
-        updWthStmt->setString(2, target.withdrawID);
-        updWthStmt->executeUpdate();
-        delete updWthStmt;
-
-        // Update student table stdStatus to withdrawn
-        string updateStudentSql = "UPDATE student SET stdStatus = 'withdrawn' WHERE studentID = ?";
-        PreparedStatement* updStdStmt = con->prepareStatement(updateStudentSql);
-        updStdStmt->setString(1, target.studentID);
-        updStdStmt->executeUpdate();
-        delete updStdStmt;
-
-        cout << "\n[ SUCCESS ] Withdrawal approved. Student status updated to 'withdraw'." << endl;
-    } else if (choice == "n" || choice == "N") {
-        
-        // Update withdraw table to 'rejected'
-        updWthStmt->setString(1, "rejected");
-        updWthStmt->setString(2, target.withdrawID);
-        updWthStmt->executeUpdate();
-        delete updWthStmt;
-
-        cout << "\n[ PROCESSED ] Withdrawal request rejected." << endl;
-    } else {
-        invalidInput();
-    }
-    
     
     PETC();
 }   //student withdrawal

@@ -616,19 +616,19 @@ void DatabaseManager::clearScreen(){
     #endif
 }   //clear screen
 
+string DatabaseManager::toUpperCase(string str){
+    transform(str.begin(), str.end(), str.begin(), ::toupper);
+    return str;
+}   //to upper case
 
-string DatabaseManager::getRankColor(string rankID){
-    string getColor = "select color from rank where rankID = ?";
-
-    PreparedStatement* rStmt =con->prepareStatement(getColor);
-
-    ResultSet* rRes=rStmt->executeQuery();
-
-    if (rRes->next())
-    {
-        return rRes->getString(1);
-        /* code */
-    } 
-
-    return "";
-}
+void DatabaseManager::testColor(string str){
+    cout<<BLACK<<str<<" "
+        <<RED<<str<<" "
+        <<GREEN<<str<<" "
+        <<YELLOW<<str<<" "
+        <<BLUE<<str<<" "
+        <<PURPLE<<str<<" "
+        <<CYAN<<str<<" "
+        <<WHITE<<str<<" "
+        <<RESET<<endl;
+}   //test color

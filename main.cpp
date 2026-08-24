@@ -28,14 +28,19 @@ int main()
         while (running)
         {
             //display main menu
-            cout<<"=====SILAT MANAGEMENT SYSTEM====="<<endl;
-            cout<<"[ MAIN MENU ]"<<endl;
+            // dbm.clearScreen();
+            cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+            cout << "│                           SILAT MANAGEMENT SYSTEM                           │" << endl;
+            cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+            cout<<"\n[ MAIN MENU ]"<<endl;
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
             cout<<"  [3] view summary"<<endl;
             cout<<"  [4] test view students"<<endl;
+            cout<<"  [9] show terminal colors"<<endl;
             cout<<"  [0] Exit"<<endl;
-            cout<<"\nSelect an option [0-2]: ";
+            cout << "\n───────────────────────────────────────────────────────────────" << endl;
+            cout<<"Select an option [0-2]: ";
             cin>>choice;
 
             switch (choice)
@@ -54,7 +59,19 @@ int main()
 
 
             case '4':
-                dbm.viewStudents();
+                dbm.allStudents();
+                break;
+            
+            case '5':
+                cout<<dbm.getNextRank("r1")<<endl;
+                cout<<dbm.getNextRank("r6")<<endl;
+                cout<<dbm.getNextRank("r7")<<endl;
+                cout<<dbm.getNextRank("r0")<<endl;
+                cout<<dbm.getNextRank("r8")<<endl;
+                break;
+            
+            case '9':
+                dbm.testColor("mibomboclaat");
                 break;
             
             case '0':

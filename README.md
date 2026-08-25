@@ -41,7 +41,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [x] view anually new student vs withdrawal (graph like)
 - [x] Monthly summary
 
-##BUGS
+## BUGS
 
 - ~Cant read input on instructor view student function~
 - ~withdraw request skip reason input~

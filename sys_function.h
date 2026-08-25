@@ -87,7 +87,11 @@ public:
     void adminDashboard();
     void regInstructor(); //register instructor
     void viewSummary();
-    void allStudents(); 
+    void allStudents();
+    void allInstructors();
+    void nvwReport(); //new vs withdraw report
+    void viewWithdrawals(); 
+    void performanceOverview();
     string numToMonth(int monthInt);
 
 

@@ -91,6 +91,7 @@ public:
     void allInstructors();
     void nvwReport(); //new vs withdraw report
     void viewWithdrawals(); 
+    void performanceOverview();
     string numToMonth(int monthInt);
 
 

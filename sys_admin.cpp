@@ -20,6 +20,7 @@ void DatabaseManager::adminDashboard(){
         cout << "   [4] View Withdrawals" << endl;
         cout << "   [5] Monthly Summary" << endl;
         cout << "   [6] Anual Summary" << endl;
+        cout << "   [7] View Performance Overview" << endl;
         cout << "   [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
@@ -59,6 +60,11 @@ void DatabaseManager::adminDashboard(){
         case '6':
             //view Anually summary
             nvwReport();
+            break;
+        
+        case '7':
+            //view student performance
+            performanceOverview();
             break;
         
         default:
@@ -600,7 +606,7 @@ void DatabaseManager::nvwReport(){
 
 }   //new vs withdraw Report
 
-void DatabaseManager::viewWithdrawals() {
+void DatabaseManager::viewWithdrawals() { //made with gemini
     struct withdrawalRecord {
         string name;
         string date;
@@ -617,7 +623,7 @@ void DatabaseManager::viewWithdrawals() {
         "FROM withdraw w "
         "JOIN student s ON w.studentID = s.studentID "
         "where wthStatus = 'approved'"
-        "ORDER BY w.wthDate DESC;";
+        "ORDER BY w.wthDate DESC";
 
     
         PreparedStatement* pstmt=con->prepareStatement(query);
@@ -669,6 +675,108 @@ void DatabaseManager::viewWithdrawals() {
     PETC();
 }
 
+void DatabaseManager::performanceOverview() { //made with gemini
+    struct StudentPerformance {
+        string studentID;
+        string fullName;
+        string currentRank;
+        int promotions;
+        double avgVelocity; // Negative or huge sentinel if no promotions (N/A)
+        bool hasVelocity;
+    };
+
+    vector<StudentPerformance> reportList;
+
+    // Fetch active students, their latest rank, promotion count, and promotion velocity
+    // Sorted by avgVelocity ASC (Fastest/Best -> Slowest), placing NULLs (0 promotions) at the bottom
+    string query = 
+        "SELECT "
+        "    s.studentID, "
+        "    s.fullName, "
+        "    COALESCE(latest_r.color, 'Putih') AS currentRank, "
+        "    COUNT(rh.rankID) - 1 AS promotionsCount, "
+        "    CASE "
+        "        WHEN COUNT(rh.rankID) > 1 THEN "
+        "            ROUND(DATEDIFF(MAX(rh.date_achieved), MIN(rh.date_achieved)) / (COUNT(rh.rankID) - 1), 1) "
+        "        ELSE NULL "
+        "    END AS avgVelocityDays "
+        "FROM student s "
+        "LEFT JOIN rank_history rh ON s.studentID = rh.studentID "
+        "LEFT JOIN rank_history latest_rh ON s.studentID = latest_rh.studentID "
+        "    AND latest_rh.date_achieved = ( "
+        "        SELECT MAX(rh2.date_achieved) "
+        "        FROM rank_history rh2 "
+        "        WHERE rh2.studentID = s.studentID "
+        "    ) "
+        "LEFT JOIN rank latest_r ON latest_rh.rankID = latest_r.rankID "
+        "WHERE s.stdStatus = 'active' "
+        "GROUP BY s.studentID, s.fullName, latest_r.color "
+        "ORDER BY "
+        "    (COUNT(rh.rankID) > 1) DESC, "
+        "    avgVelocityDays ASC, "
+        "    promotionsCount DESC;";
+
+    
+    PreparedStatement* pstmt=con->prepareStatement(query);
+    ResultSet* res=pstmt->executeQuery();
+
+    while (res->next()) {
+        StudentPerformance sp;
+        sp.studentID   = res->getString("studentID");
+        sp.fullName    = res->getString("fullName");
+        sp.currentRank = res->getString("currentRank");
+        sp.promotions  = res->getInt("promotionsCount");
+
+        if (res->isNull("avgVelocityDays")) {
+            sp.hasVelocity  = false;
+            sp.avgVelocity  = 0.0;
+        } else {
+            sp.hasVelocity  = true;
+            sp.avgVelocity  = res->getDouble("avgVelocityDays");
+        }
+        reportList.push_back(sp);
+    }
+    
+
+    // Render Table View
+    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                               STUDENT PERFORMANCE OVERVIEW                             │" << endl;
+    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
+    cout << "  • Metric    : Promotion Velocity (Average Days per Belt Promotion)" << endl;
+    cout << "  • Formula   : (Date_latest_rank - Date_first_rank) / Total Promotion Achieved (N)" << endl;
+    cout << "  • Sorted by : Best Performance (Shortest / Fastest → Longest / Slowest)" << endl;
+
+    if (reportList.empty()) {
+        cout << "  No active student data found.\n" << endl;
+        return;
+    }
+
+    cout << "\n╭───────┬─────────────────────────────────────┬──────────────┬────────────┬──────────────╮" << endl;
+    cout << "│ " << left << setw(5) << "ID" 
+         << " │ " << setw(35) << "STUDENT NAME" 
+         << " │ " << setw(12) << "CURRENT RANK" 
+         << " │ " << right << setw(10) << "PROMOTIONS" 
+         << " │ " << setw(12) << "AVG VELOCITY" << " │" << endl;
+    cout << "├───────┼─────────────────────────────────────┼──────────────┼────────────┼──────────────┤" << endl;
+
+    for (int i =0; i<reportList.size(); ++i) {
+        StudentPerformance sp = reportList[i];
+        cout << "│ " << left  << setw(5)  << sp.studentID 
+             << " │ " << left  << setw(35) << sp.fullName 
+             << " │ " << left  << setw(12) << sp.currentRank 
+             << " │ " << right << setw(10) << sp.promotions << " │ ";
+
+        if (sp.hasVelocity) {
+            cout << right << setw(7) << fixed << setprecision(1) << sp.avgVelocity << " days │" << endl;
+        } else {
+            cout << "     N/A     │" << endl;
+        }
+    }
+    cout << "╰───────┴─────────────────────────────────────┴──────────────┴────────────┴──────────────╯" << endl;
+
+    PETC();
+    
+}   //performance overview
 
 string DatabaseManager::numToMonth(int monthInt){
     switch (monthInt)

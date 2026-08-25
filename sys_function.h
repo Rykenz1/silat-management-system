@@ -87,7 +87,8 @@ public:
     void adminDashboard();
     void regInstructor(); //register instructor
     void viewSummary();
-    void allStudents(); 
+    void allStudents();
+    void allInstructors();
     string numToMonth(int monthInt);
 
 

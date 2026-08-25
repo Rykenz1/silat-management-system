@@ -44,4 +44,4 @@ A university workshop project to manage silat (martial arts) instructors and stu
 ##BUGS
 
 - ~Cant read input on instructor view student function~
-- withdraw request skip reason input
+- ~withdraw request skip reason input~

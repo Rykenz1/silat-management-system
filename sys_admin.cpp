@@ -9,12 +9,18 @@ void DatabaseManager::adminDashboard(){
     
     while (!endLoop)
     {
-        /* code */
-        cout << "===== Admin Dashboard =====" << endl;
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                               ADMIN DASHBOARD                               │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        cout << "\n3
+        [ AVAILABLE ACTIONS ]" << endl;
         cout << "   [1] Register Instructor" << endl;
-        cout << "   [2] View all students" << endl;
-        cout << "   [3] View withdrawals" << endl;
-        cout << "   [4] Monthly Summary" << endl;
+        cout << "   [2] View All Students" << endl;
+        cout << "   [3] View All Instructors" << endl;
+        cout << "   [4] View Withdrawals" << endl;
+        cout << "   [5] Monthly Summary" << endl;
+        cout << "   [6] Anual Summary" << endl;
         cout << "   [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
@@ -27,23 +33,31 @@ void DatabaseManager::adminDashboard(){
             break;
         
         case '1':
+            //register instructor
             regInstructor();
             break;
         
         case '2':
-            cout<<"case 2"<<endl;
+            //view all students
+            allStudents();
             break;
 
         case '3':
-            /* code */
+            //view all instructors
+            allInstructors();
             break;
             
         case '4':
-            viewSummary();
+            //view all withdrawals
             break;
 
         case '5':
-            /* code */
+            //view monthly summary
+            viewSummary();
+            break;
+        
+        case '6':
+            //view Anually summary
             break;
         
         default:
@@ -319,12 +333,12 @@ void DatabaseManager::allStudents() {
     }
 
     // Sort: 1st by Rank Level (Highest to Lowest), 2nd by Age (Oldest to Youngest)
-    sort(studentList.begin(), studentList.end(), [](const student& a, const student& b) {
-        if (a.rankLevel != b.rankLevel) {
-            return a.rankLevel > b.rankLevel; // Higher rank first
-        }
-        return a.age > b.age; // Older student first within same rank
-    });
+    // sort(studentList.begin(), studentList.end(), [](const student& a, const student& b) {
+    //     if (a.rankLevel != b.rankLevel) {
+    //         return a.rankLevel > b.rankLevel; // Higher rank first
+    //     }
+    //     return a.age > b.age; // Older student first within same rank
+    // });
 
     // Main Header
     clearScreen();
@@ -338,7 +352,7 @@ void DatabaseManager::allStudents() {
     string currentRank = "";
 
     for (size_t i = 0; i < studentList.size(); ++i) {
-        const auto& st = studentList[i];
+        student st = studentList[i];
 
         // If new rank group encountered, print group header & table headers
         if (st.rank != currentRank) {
@@ -374,7 +388,129 @@ void DatabaseManager::allStudents() {
     cout << "\n───────────────────────────────────────────────────────────────" << endl;
     PETC();
 
-}
+}   //all students
+
+void DatabaseManager::allInstructors(){
+    //need name, class day, student count
+    struct instructor{
+        string fullName;
+        string classSlot;
+        int studentCount=0;
+    };
+
+    vector<instructor> instructorList;
+
+    string instructorSql = 
+        "select i.fullName, sl.classDay, "
+        "count(s.instructorID) as studentCount "
+        "from instructor i "
+        "left join student s on i.instructorID = s.instructorID "
+        "left join slot sl on sl.slotID = i.slotID "
+        "group by i.fullName "
+        "order by sl.slotID asc, studentCount desc "
+    ;
+
+    PreparedStatement* iStmt=con->prepareStatement(instructorSql);
+
+    ResultSet* iRes=iStmt->executeQuery();
+
+    if (iRes->rowsCount() == 0)
+    {
+        cout<<YELLOW<<"\n[ NOTICE ] "<<RESET<<"No instructor at all. "<<endl;
+        PETC();
+        return;
+    }
+    
+    while (iRes->next())
+    {
+        instructor ins;
+
+        ins.fullName=iRes->getString("fullName");
+        ins.classSlot=iRes->getString("classDay");
+        ins.studentCount=iRes->getInt("studentCount");
+
+        instructorList.push_back(ins);
+    }
+
+    delete iStmt;
+    delete iRes;
+    
+    //rendering
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                               ALL INSTRUCTORS                               │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+    cout << "  • Total Instructors: " <<GREEN<< instructorList.size()<<RESET<<endl;
+
+    string currentDay="";
+    
+    //display in table list
+    for (size_t i = 0; i < instructorList.size(); i++)
+    {
+        instructor il = instructorList[i];
+
+        //print header
+        if(il.classSlot != currentDay){
+            currentDay = il.classSlot;
+
+            // Count instructor in this day group
+            int instructorsInDay =0;
+            int studentsInDay =0;
+
+            string getCountSql = 
+                "select "
+                "sl.classDay, "
+                "count(distinct i.instructorID) as instructorCount, "
+                "count(distinct s.studentID) as studentCount "
+                "from slot sl "
+                "left join instructor i on i.slotID = sl.slotID "
+                "left join student s on s.slotID = sl.slotID "
+                "where sl.classDay = ? "
+                "group by sl.classDay"
+            ;
+            PreparedStatement* cStmt=con->prepareStatement(getCountSql);
+            cStmt->setString(1,currentDay);
+
+            ResultSet* cRes=cStmt->executeQuery();
+
+            if (cRes->next())
+            {
+                instructorsInDay = cRes->getInt("instructorCount");
+                studentsInDay = cRes->getInt("studentCount");
+            }
+            
+
+            cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+            cout << "│ "<< WHITE <<"[ DAY: " << left << setw(10) << (toUpperCase(currentDay) + " ]") << RESET
+                 << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << " INSTRUCTOR(S) ]"<<RESET 
+                 << left << setw(10)<<BLUE<<"[ " << studentsInDay << " STUDENT(S) ]"<<RESET 
+                 << right << setw(21) << "│" << endl;
+            cout << "├─────────────────────────────────────────────────────────────┬───────────────┤" << endl;
+            cout << "│ " << left << setw(59) << "Name"
+                 << " │ " << left << setw(12) << "Student Count"
+                 << " │" << endl;
+            cout << "├─────────────────────────────────────────────────────────────┼───────────────┤" << endl;
+
+        }
+        string textColor = (il.studentCount >= 10) ? RED : 
+                (il.studentCount >= 6)  ? YELLOW : GREEN;
+
+        cout << "│ " << left << setw(59) << il.fullName
+             << " │ " << textColor << right << setw(13) << (to_string(il.studentCount) + " / 10")
+             << RESET << " │" << endl;
+
+        if( i == instructorList.size() - 1 || instructorList[i+1].classSlot != currentDay){
+            cout << "╰─────────────────────────────────────────────────────────────┴───────────────╯" << endl;
+        }
+
+    }
+
+    PETC();
+    
+
+}   //all instructors
+
+
 
 string DatabaseManager::numToMonth(int monthInt){
     switch (monthInt)

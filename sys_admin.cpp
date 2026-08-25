@@ -48,6 +48,7 @@ void DatabaseManager::adminDashboard(){
             
         case '4':
             //view all withdrawals
+            viewWithdrawals();
             break;
 
         case '5':
@@ -598,6 +599,75 @@ void DatabaseManager::nvwReport(){
     
 
 }   //new vs withdraw Report
+
+void DatabaseManager::viewWithdrawals() {
+    struct withdrawalRecord {
+        string name;
+        string date;
+        string reason;
+    };
+
+    vector<withdrawalRecord> records;
+
+    string query = 
+        "SELECT "
+        "    s.fullName AS name, "
+        "    w.wthDate AS date, "
+        "    w.reason AS reason "
+        "FROM withdraw w "
+        "JOIN student s ON w.studentID = s.studentID "
+        "where wthStatus = 'approved'"
+        "ORDER BY w.wthDate DESC;";
+
+    
+        PreparedStatement* pstmt=con->prepareStatement(query);
+        ResultSet* res=pstmt->executeQuery();
+
+    while (res->next()) {
+        withdrawalRecord wr;
+
+        wr.name = res->getString("name");
+        wr.date = res->getString("date");
+        wr.reason = res->getString("reason");
+        records.push_back(wr);
+    }
+   
+
+    // Header Banner
+    clearScreen();
+    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                                   STUDENT WITHDRAWALS                                  │" << endl;
+    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
+
+    if (records.empty()) {
+        cout << "\n  No withdrawal records found.\n" << endl;
+        return;
+    }
+
+    // Table View
+    cout << "╭─────────────────────────────────────┬────────────┬─────────────────────────────────────╮" << endl;
+    cout << "│ " << left << setw(35) << "STUDENT NAME" 
+         << " │ " << setw(10) << "DATE" 
+         << " │ " << setw(35) << "REASON" << " │" << endl;
+    cout << "├─────────────────────────────────────┼────────────┼─────────────────────────────────────┤" << endl;
+
+    for (int i = 0 ; i<records.size(); i++) {
+        withdrawalRecord row = records[i];
+        
+        // Truncate long reasons if they exceed column width to keep table borders aligned
+        string displayReason = row.reason;
+        if (displayReason.length() > 35) {
+            displayReason = displayReason.substr(0, 32) + "...";
+        }
+
+        cout << "│ " << left << setw(35) << row.name 
+             << " │ " << left << setw(10) << row.date 
+             << " │ " << left << setw(35) << displayReason << " │" << endl;
+    }
+
+    cout << "╰─────────────────────────────────────┴────────────┴─────────────────────────────────────╯\n" << endl;
+    PETC();
+}
 
 
 string DatabaseManager::numToMonth(int monthInt){

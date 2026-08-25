@@ -13,8 +13,7 @@ void DatabaseManager::adminDashboard(){
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                               ADMIN DASHBOARD                               │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-        cout << "\n3
-        [ AVAILABLE ACTIONS ]" << endl;
+        cout << "\n[ AVAILABLE ACTIONS ]" << endl;
         cout << "   [1] Register Instructor" << endl;
         cout << "   [2] View All Students" << endl;
         cout << "   [3] View All Instructors" << endl;
@@ -58,6 +57,7 @@ void DatabaseManager::adminDashboard(){
         
         case '6':
             //view Anually summary
+            nvwReport();
             break;
         
         default:
@@ -332,14 +332,6 @@ void DatabaseManager::allStudents() {
         return;
     }
 
-    // Sort: 1st by Rank Level (Highest to Lowest), 2nd by Age (Oldest to Youngest)
-    // sort(studentList.begin(), studentList.end(), [](const student& a, const student& b) {
-    //     if (a.rankLevel != b.rankLevel) {
-    //         return a.rankLevel > b.rankLevel; // Higher rank first
-    //     }
-    //     return a.age > b.age; // Older student first within same rank
-    // });
-
     // Main Header
     clearScreen();
 
@@ -510,6 +502,102 @@ void DatabaseManager::allInstructors(){
 
 }   //all instructors
 
+void DatabaseManager::nvwReport(){
+
+    int totalNew=0;
+    int totalWithdraw=0;
+    
+    struct month{
+        int year;
+        int month;
+        int newCount=0;
+        int withdrawCount=0;
+    };
+
+    string nwSql = 
+        "select "
+        "? as year, "
+        "? as month, "
+        "(select count(studentID) "
+        "   from student where month(joinDate) = month "
+        "   and year(joinDate)=year "
+        ") as newCount, "
+        "(select count(studentID) "
+        "   from withdraw where month(wthDate) = month "
+        "   and year(wthDate)=year "
+        "   and wthStatus = 'approved' "
+        ") as withdrawCount "
+    ;
+
+    vector<month> monthList;
+    monthList.clear();
+    //insert data into vector
+    for(size_t i=1;i<=12;++i){
+        int thisMonth=i;
+        int thisYear=2026;
+
+        
+        PreparedStatement* nwStmt=con->prepareStatement(nwSql);
+        nwStmt->setInt(1,thisYear);
+        nwStmt->setInt(2,thisMonth);
+
+        ResultSet* nwRes=nwStmt->executeQuery();
+
+        if(nwRes->next()){
+            month m;
+
+            m.month = nwRes->getInt("month");
+            m.year = nwRes->getInt("year");
+            m.newCount = nwRes->getInt("newCount");
+            totalNew += m.newCount;
+            m.withdrawCount= nwRes->getInt("withdrawCount");
+            totalWithdraw += m.withdrawCount;
+            monthList.push_back(m);
+        }
+
+        delete nwStmt;
+        delete nwRes;
+
+    }
+
+    //rendering
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                          ANNUAL NEW STUDENT REPORT                          │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+    
+    cout<<WHITE<<"\nYEAR: [ 2026 ]"<<RESET<<endl;
+    cout<<"       Total New Students: "<<GREEN<<totalNew<<RESET<<endl;
+    cout<<"Total Withdrawed Students: "<<RED<<totalWithdraw<<RESET<<endl;
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    
+    
+    for(int i=0;i<monthList.size();++i){
+        month ml = monthList[i];
+        cout<<endl;
+        cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
+        cout<<"       New Student : ";
+        if(ml.newCount== 0 ){
+            cout<<YELLOW<<"No New Student"<<RESET<<endl;
+        }else{
+            for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
+            cout<<" ["<<ml.newCount<<"]"<<endl;
+        }
+
+        cout<<"Withdrawed Student : ";
+        if(ml.withdrawCount == 0){
+            cout<<YELLOW<<"No Student Withdrawed"<<RESET<<endl;
+        }else{
+            for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
+            cout<<" ["<<ml.withdrawCount<<"]"<<endl;
+        }
+    }
+    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+    PETC();
+    
+    
+
+}   //new vs withdraw Report
 
 
 string DatabaseManager::numToMonth(int monthInt){

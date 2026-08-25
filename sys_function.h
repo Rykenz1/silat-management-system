@@ -89,6 +89,7 @@ public:
     void viewSummary();
     void allStudents();
     void allInstructors();
+    void nvwReport(); //new vs withdraw report
     string numToMonth(int monthInt);
 
 

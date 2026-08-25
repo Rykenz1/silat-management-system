@@ -35,7 +35,7 @@ int main()
             cout<<"\n[ MAIN MENU ]"<<endl;
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
-            cout<<"  [3] view instructors"<<endl;
+            cout<<"  [3] test nwReport"<<endl;
             cout<<"  [4] test view students"<<endl;
             cout<<"  [9] show terminal colors"<<endl;
             cout<<"  [0] Exit"<<endl;
@@ -54,7 +54,7 @@ int main()
                 break;
                 
             case '3':
-                dbm.allInstructors();
+                dbm.nvwReport();
                 break;
 
 

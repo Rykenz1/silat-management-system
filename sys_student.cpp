@@ -186,6 +186,8 @@ void DatabaseManager::regStudent(int option,string parentID){
 
 
 void DatabaseManager::studenDashboard(){
+
+    
     // string studentID;
     string fName;
     string classSlot;
@@ -200,19 +202,23 @@ void DatabaseManager::studenDashboard(){
     while (!endLoop)
     {
         clearScreen();
-        string sqlStmt = "select st.*, sl.classDay, r.color, count(w.studentID) as requestCount, "
-         "  w.wthStatus"
-         " from student st"
-         " join slot sl on st.slotID = sl.slotID"
-         " join rank_history rh on st.studentId = rh.studentID"
-         " left join withdraw w on w.studentID = st.studentID "
-         "      and w.wthStatus = (select wthStatus"
-         "          from withdraw where wthStatus = 'pending' "
-         "          order by withdrawID desc limit 1) "
-         " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 "
-         "      where rh2.studentID = st.studentID) "
-         " join rank r on rh.rankID = r.rankID "
-         " where accountID=?";
+        cout<<"Current account ID: "<<currentUser<<endl;
+        string sqlStmt = "select st.*, sl.classDay, "
+            "COALESCE(r.color, 'Pending Approval') AS color,"
+            "count(w.studentID) as requestCount, "
+            "w.wthStatus "
+            "from student st "
+            "left join slot sl on st.slotID = sl.slotID "
+            "left join rank_history rh on st.studentId = rh.studentID "
+            "left join withdraw w on w.studentID = st.studentID "
+            "     and w.wthStatus = (select wthStatus "
+            "         from withdraw where wthStatus = 'pending' "
+            "         order by withdrawID desc limit 1) "
+            "and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 "
+            "     where rh2.studentID = st.studentID) "
+            "left join rank r on rh.rankID = r.rankID "
+            "where accountID=? "
+            "group by st.studentID, sl.classDay, r.color, w.wthStatus ";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
 
@@ -242,6 +248,7 @@ void DatabaseManager::studenDashboard(){
 
         ResultSet* rankRes=rstmt->executeQuery();
 
+        string status = (stdStatus == "withdrawn" ? (RED + stdStatus + RESET) : (stdStatus == "pending" ? (YELLOW + stdStatus + RESET):(GREEN + stdStatus + RESET)));
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                              STUDENT DASHBOARD                              │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
@@ -249,7 +256,7 @@ void DatabaseManager::studenDashboard(){
         cout << "  • Student Name          : "<< fName << endl;
         cout << "  • Class Slot            : "<< classSlot << endl;
         cout << "  • Current Rank          : "<< curRank << endl;
-        cout << "  • Status                : "<< (stdStatus == "withdrawn" ? (RED + stdStatus + RESET) : (GREEN + stdStatus + RESET)) << endl;
+        cout << "  • Status                : "<< status << endl;
         cout << "  • Fee Status            : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         
         //if have withdraw request

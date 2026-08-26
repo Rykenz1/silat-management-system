@@ -66,7 +66,7 @@ void DatabaseManager::regStudent(int option,string parentID){
     while (!isValid)
     {
         cout<<"Enter full name : ";
-        getline(cin, fName);
+        getline(cin>>ws, fName);
 
         if(isValidFullName(fName)) isValid=true;
         else{

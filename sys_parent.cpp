@@ -10,22 +10,43 @@ void DatabaseManager::regParent(){
     string homeAdd;
     string phoneNum;
 
-    cout<<"=====REGISTERING AS A PARENT====="<<endl;
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                           REGISTERING AS A PARENT                           │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
     
     //create account
     if(!createAcc(2)){
         return;
     };
 
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
-    cout<<"enter IC: ";
-    getline(cin, ic);
-    cout<<"enter home address: ";
-    getline(cin, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin, phoneNum);
+    bool isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter full name : ";
+        getline(cin>>ws, fName);
+
+        if(isValidFullName(fName)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid name.\n"<<endl;
+        }
+    }
+    
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter IC (without hyphen '-'): ";
+        getline(cin>>ws, ic);
+
+        if(isValidIC(ic)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid IC format.\n"<<endl;
+        }
+    }
+
+    cout<<"Enter home address: ";
+    getline(cin>>ws, homeAdd);
+    cout<<"Enter phone number: ";
+    getline(cin>>ws, phoneNum);
 
     string sqlStatement = "insert into parent(parentID, fullName,accountID, homeAdd, phoneNum)"
         "value(?,?,?,?,?)";
@@ -42,19 +63,36 @@ void DatabaseManager::regParent(){
     ResultSet* res= pstmt->executeQuery();
 
     
-    int childCount;
-    char input;
-    cout << "How many child to register? (enter number): " ;
-    cin>>input;
+    int childCount = 0;
+    bool valid = false;
 
-    childCount = input - '0';
+    do {
+        string input;
+        cout << "How many child to register? (enter number): ";
+        getline(cin >> ws, input); // handles leftover newlines cleanly
 
-    for (int i = 0; i < childCount; i++)
-    {
-        cout<<"\nregister child "<<i+1<<endl;
-        regStudent(1,parentID);
+        try {
+            size_t pos;
+            int parsedCount = stoi(input, &pos);
+
+            // Ensure the entire string was numeric, greater than 0, and within a realistic limit (e.g., 10)
+            if (pos == input.length() && parsedCount > 0 && parsedCount <= 10) {
+                childCount = parsedCount;
+                valid = true;
+            } else {
+                cout <<RED<<"[ ERROR ] "<<RESET<<"Please enter a valid number of children.\n" << endl;
+            }
+        } catch (...) {
+            cout <<RED<<"[ ERROR ] "<<RESET<<"Invalid input. Digits only.\n" << endl;
+        }
+
+    } while (!valid);
+
+    // Registration Loop
+    for (int i = 0; i < childCount; i++) {
+        std::cout << "\n--- Register Child " << (i + 1) << " of " << childCount << " ---" << std::endl;
+        regStudent(1, parentID);
     }
-    
 
 }   //register parent
 
@@ -82,11 +120,10 @@ void DatabaseManager::parentDashboard(){
             entityID=pRes->getString("parentID");
         }
 
-        
-
-
         //display page
-        cout << "===== Parent Dashboard =====" << endl;
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                              PARENT DASHBOARD                               │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "\n[ PARENT PROFILE ]" << endl;
         cout << "  • Name         : "<<userName << endl;
         cout << "  • Phone No.    : "<<phoneNum << endl;
@@ -105,7 +142,7 @@ void DatabaseManager::parentDashboard(){
         cout << "  [0] Exit" << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
-        getline(cin,choice);
+        getline(cin>>ws,choice);
 
         if (choice == "0"){
             endLoop=true;
@@ -171,7 +208,9 @@ void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
         
         PreparedStatement* updStmt = nullptr;
         
-        cout<<"=====EDIT INFO====="<<endl;
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                  EDIT INFO                                  │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
 
         cout << "\n[ PARENT PROFILE ]" << endl;
         cout << "  • Name         : "<<userName << endl;
@@ -185,7 +224,7 @@ void DatabaseManager::editInfo(string& phoneNum, string& homeAdd){
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "   Select an option: ";
 
-        getline(cin,choice);
+        getline(cin>>ws,choice);
 
         if ( choice == "0"){
             endLoop=true;
@@ -262,7 +301,9 @@ void DatabaseManager::mngChild(){
 
     while (!endLoop)
     {
-        cout<<"=====MANAGE CHILDREN====="<<endl;
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                               MANAGE CHILDREN                               │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
 
         cout << "\n[ CHILD(REN) ]" << endl;
         dispChildren();

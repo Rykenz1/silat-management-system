@@ -13,6 +13,12 @@
 #include <cppconn/prepared_statement.h>
 #include <mysql_connection.h>
 #include <mysql_driver.h>
+#if defined(_WIN32) || defined(_WIN64)
+        #include <conio.h>
+    #else
+        #include <termios.h>
+        #include <unistd.h>
+#endif
 using namespace std;
 using namespace sql;
 
@@ -59,6 +65,7 @@ public:
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     int calcAge(string IC); //calculate age based on IC
     string toUpperCase(string str); //convert string to uppercase
+    string getHiddenPassword(const string& prompt);
 
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent

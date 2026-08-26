@@ -31,9 +31,8 @@ void DatabaseManager::login() {
     {
         cout << "=====LOGIN PAGE=====" << endl;
         cout << "Enter username: ";
-        cin >> username;
-        cout << "Enter password: ";
-        cin >> password;
+        getline(cin >> ws, username);
+        password = getHiddenPassword("Enter Password: ");
 
         getCurUsr(username,password);
 
@@ -632,3 +631,43 @@ void DatabaseManager::testColor(string str){
         <<WHITE<<str<<" "
         <<RESET<<endl;
 }   //test color
+
+string DatabaseManager::getHiddenPassword(const string& prompt = "Password: "){
+    //made with gemini
+
+    cout << prompt << flush;
+    string password = "";
+
+    #if defined(_WIN32) || defined(_WIN64)
+        int ch;
+        while (true) {
+            ch = _getch();
+            if (ch == 13 || ch == 10 || ch == '\r' || ch == '\n') break;
+            if (ch == 8) {
+                if (!password.empty()) password.pop_back();
+            } else if (ch >= 32 && ch <= 126) {
+                password += static_cast<char>(ch);
+            }
+        }
+    #else
+        termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+        char ch;
+        while ((ch = getchar()) != '\n' && ch != '\r' && ch != EOF) {
+            if (ch == 127 || ch == 8) { // Backspace
+                if (!password.empty()) password.pop_back();
+            } else {
+                password += ch;
+            }
+        }
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    #endif
+
+    cout << "\n";
+    return password;
+}   //hide password

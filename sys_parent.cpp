@@ -64,7 +64,7 @@ void DatabaseManager::regParent(){
 
     
     int childCount = 0;
-    bool valid = false;
+    isValid = false;
 
     do {
         string input;
@@ -78,7 +78,7 @@ void DatabaseManager::regParent(){
             // Ensure the entire string was numeric, greater than 0, and within a realistic limit (e.g., 10)
             if (pos == input.length() && parsedCount > 0 && parsedCount <= 10) {
                 childCount = parsedCount;
-                valid = true;
+                isValid = true;
             } else {
                 cout <<RED<<"[ ERROR ] "<<RESET<<"Please enter a valid number of children.\n" << endl;
             }
@@ -86,7 +86,7 @@ void DatabaseManager::regParent(){
             cout <<RED<<"[ ERROR ] "<<RESET<<"Invalid input. Digits only.\n" << endl;
         }
 
-    } while (!valid);
+    } while (!isValid);
 
     // Registration Loop
     for (int i = 0; i < childCount; i++) {

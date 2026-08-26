@@ -90,6 +90,7 @@ public:
     void promoteStudents(string instructorID);
     string getNextRank(string rankID);
     string getRankColor(string rankID);
+    string getSlotDay(string slotID); //take s1, return Monday
     void studentWithrawal(string instructorID);
     
     //=====ADMIN FUNCTIONS=====

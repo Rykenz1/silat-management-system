@@ -102,9 +102,10 @@ void DatabaseManager::instructorDashboard(){
 }   // instructor dashboard
 
 
-void DatabaseManager::studentApproval(string instructorID, string classSlot){
-    cout<<"=====STUDENT APPROVAL====="<<endl;
-
+void DatabaseManager::studentApproval(string instructorID, string classDay){
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                               STUDENT APPROVAL                              │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
     struct pendingStudent
     {
         int digit;
@@ -113,9 +114,6 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
         string phoneNum; 
     };
     
-
-    
-    
     vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
     
 
@@ -123,7 +121,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 
     PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
     
-    pstmt->setString(1,classSlot);
+    pstmt->setString(1,classDay);
 
     ResultSet* res=pstmt->executeQuery();
 
@@ -147,8 +145,8 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 
     //check if list is empty
     if (pendingList.empty())
-    {
-        cout<<"\nNo pending student registration for the class slot: "<<classSlot<<endl;
+    {   
+        cout<<YELLOW<<"\n[ NOTICE ]"<<RESET<<"No pending student registration for the class slot: "<<classDay<<endl;
     }
 
     cout<<"───────────────────────────────────────────────────────────────" << endl;
@@ -594,6 +592,21 @@ string DatabaseManager::getRankColor(string rankID){
     return "??";
     
 }   //get rank color
+
+string DatabaseManager::getSlotDay(string slotID){
+    string getDaySql="select classDay from slot where slotID=?";
+    string day="";
+    
+    PreparedStatement* gdStmt=con->prepareStatement(getDaySql);
+    gdStmt->setString(1,slotID);
+    
+    ResultSet* gdRes=gdStmt->executeQuery();
+
+    if(gdRes->next()){
+        day=gdRes->getString("classDay");
+    }
+    return day;
+}
 
 void DatabaseManager::studentWithrawal(string instructorID){
 

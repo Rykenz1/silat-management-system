@@ -168,7 +168,7 @@ void DatabaseManager::regStudent(int option,string parentID){
         ResultSet* res= pstmt->executeQuery();
 
         cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Waiting for instructor approval"<<endl;
-
+        PETC();
         
     }else if(choice== "n" || choice == "N"){
         //delete account

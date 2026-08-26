@@ -49,7 +49,7 @@ public:
     // Function Declarations
     void login();
     void registration();      //register menu
-    void createAcc(int option);  //1: student, 2: parent, 3: instructor
+    bool createAcc(int option);  //1: student, 2: parent, 3: instructor
     void getCurUsr(string username, string password); //get current user
     void payFees();
     void donate();
@@ -101,7 +101,7 @@ public:
     void performanceOverview();
     string numToMonth(int monthInt);
 
-
+    //41 functions daaamnnn
 };
 
 #endif // SYS_FUNCTION_H

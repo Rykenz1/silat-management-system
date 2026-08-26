@@ -16,8 +16,10 @@ void DatabaseManager::regStudent(int option,string parentID){
     //only create account if self register (option 0)
     if (option == 0)
     {
-        cout<<"=====REGISTERING AS A STUDENT====="<<endl;
-        createAcc(1);
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                          REGISTERING AS A STUDENT                           │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        if(!createAcc(1)) return;
     }
     
     cin.ignore();

@@ -29,7 +29,10 @@ void DatabaseManager::login() {
 
     for (int i = 3; i > 0; i--)
     {
-        cout << "=====LOGIN PAGE=====" << endl;
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                 LOGIN PAGE                                  │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "Enter username: ";
         getline(cin >> ws, username);
         password = getHiddenPassword("Enter Password: ");
@@ -56,56 +59,50 @@ void DatabaseManager::login() {
             instructorDashboard();
             break;
         }else{
-            cout<<"\nIncorrect username or password.."<<endl;
+            cout<<YELLOW<<"\n[ NOTICE ] "<<RESET<<"Incorrect username or password.."<<endl;
             cout<<"Try again"<<endl;
-            cout<<i-1<<" retries left"<<endl;
+            cout<<i-1<<" Retries left"<<endl;
+            PETC();
         }
     }
 }
 
 void DatabaseManager::registration(){
-    char choice;
+    string choice;
     bool running=true;
 
     while (running)
     {
-        cout<<"=====REGISTER MENU====="<<endl<<endl;
-        cout<<"Select registration caterogy:"<<endl;
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                REGISTER MENU                                │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        cout<<"\nSelect registration caterogy:"<<endl;
         cout<<"  [1] Individual Student (self register)"<<endl;
         cout<<"  [2] Parent / Guardian (registering children <13 years old)"<<endl;
         cout<<"  [0] Back to Main Menu"<<endl;
 
-        cout<<"Select an option [0-2]: ";
-        cin>>choice;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option [0-2]: ";
+        getline(cin >>ws, choice);
 
-        switch (choice)
-        {
-        case '1':
-            cout<<"register student"<<endl;
+        if(choice == "0") return;
+        else if(choice == "1"){
             regStudent(0,"NULL");
-            break;
-            
-        
-        case '2':
-            cout<<"register parent"<<endl;
-            regParent();
-            break;
-
-        case '0':
-            running = false;
-            break;
-            
-        default:
-            invalidInput();
-            break;
+            return;
         }
+        else if(choice == "2"){
+            regParent();
+            return;
+        }
+
     }
-    
+    PETC();
     
 }      //register menu
 
 
-void DatabaseManager::createAcc(int option){
+bool DatabaseManager::createAcc(int option){
     string username;    
     string password;
     string cfmPwd;      //confirm password
@@ -129,16 +126,45 @@ void DatabaseManager::createAcc(int option){
         default:
             break;
     }
-
-    cout<<"enter username: ";
-    cin>>username;
-
-    for (int i = 0; i < 3; i++)
+    bool validUsername=false;
+    while (!validUsername)
     {
-        cout<<"enter password: ";
-        cin>>password;
-        cout<<"confirm password: ";
-        cin>>cfmPwd;
+        cout<<"Enter username (or enter '0' to abort): ";
+        getline(cin>>ws,username);
+
+        if (username == "0")
+        {
+            cout<<YELLOW<<"[ ABORTING ] "<<RESET<<"Please wait..."<<endl;
+            PETC();
+            return false;
+        }
+        
+
+        string checkUsernameSql= "select username from account where username = ?";
+
+        PreparedStatement* cStmt=con->prepareStatement(checkUsernameSql);
+        cStmt->setString(1,username);
+
+        ResultSet* cRes=cStmt->executeQuery();
+
+        if (cRes->rowsCount()==0)
+        {
+            cout<<GREEN<<"[ VALID ] "<<RESET<<"Username available!"<<endl;
+            validUsername = true;
+        }else{
+            cout<<YELLOW<<"[ WARNING ] "<<RESET<<"Username already taken!"<<endl;
+        }
+        
+    }
+    
+    
+    bool samePassword=false;
+    while (!samePassword)
+    {
+        cout<<"\nEnter password: ";
+        getline(cin>>ws,password);
+        cout<<"Confirm password: ";
+        getline(cin>>ws,cfmPwd);
 
         if(password==cfmPwd){
             password = cfmPwd;
@@ -179,7 +205,7 @@ void DatabaseManager::createAcc(int option){
 
     getCurUsr(username,password);
 
-    
+    return true;
 }       //create account
 
 
@@ -204,9 +230,6 @@ void DatabaseManager::getCurUsr(string username, string password){
         // cout<<"Incorrect username or password.."<<endl;
         // cout<<"Try again"<<endl;
     }
-    
-    cout<<currentUser<<endl;
-    cout<<userRole<<endl;
     
     delete pstmt;
     delete res;
@@ -478,9 +501,9 @@ void DatabaseManager::donate(){
     string choice;
 
     //display page
-    cout <<GREEN<< "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout <<GREEN<< "╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                 GELANGGANG DONATION / INFAQ                 │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" <<RESET<< endl;
+    cout << "╰─────────────────────────────────────────────────────────────╯" <<RESET<< endl;
     
     cout << "\n  [ DONOR INFORMATION ]" << endl;
     cout << "  • Contributor  : " << userName << endl;

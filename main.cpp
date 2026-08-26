@@ -35,9 +35,6 @@ int main()
             cout<<"\n[ MAIN MENU ]"<<endl;
             cout<<"  [1] Login Account"<<endl;
             cout<<"  [2] Register New Account"<<endl;
-            cout<<"  [3] performance overview"<<endl;
-            cout<<"  [4] test view students"<<endl;
-            cout<<"  [9] show terminal colors"<<endl;
             cout<<"  [0] Exit"<<endl;
             cout << "\n───────────────────────────────────────────────────────────────" << endl;
             cout<<"Select an option [0-2]: ";
@@ -52,27 +49,6 @@ int main()
             case '2':
                 dbm.registration();
                 break;
-                
-            case '3':
-                dbm.performanceOverview();
-                break;
-
-
-            case '4':
-                dbm.allStudents();
-                break;
-            
-            case '5':
-                cout<<dbm.getNextRank("r1")<<endl;
-                cout<<dbm.getNextRank("r6")<<endl;
-                cout<<dbm.getNextRank("r7")<<endl;
-                cout<<dbm.getNextRank("r0")<<endl;
-                cout<<dbm.getNextRank("r8")<<endl;
-                break;
-            
-            case '9':
-                dbm.testColor("mibomboclaat");
-                break;
             
             case '0':
                 cout<<"Adios amigos :)"<<endl;
@@ -83,11 +59,7 @@ int main()
                 dbm.clearScreen();
             }
         }
-        
-        
-
-        
-        
+ 
     }
     catch (const exception& e) {
         // Catches unexpected general C++ exceptions

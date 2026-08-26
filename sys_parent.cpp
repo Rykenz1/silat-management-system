@@ -286,8 +286,5 @@ void DatabaseManager::mngChild(){
     }
     
     return;
-    
-    
-
 
 }   //manage child

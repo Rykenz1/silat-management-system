@@ -90,11 +90,11 @@ void DatabaseManager::regInstructor(){
 
     cin.ignore();
     cout<<"Enter full name: ";
-    getline(cin, fName);
+    getline(cin >> ws, fName);
     cout<<"enter home address: ";
-    getline(cin, homeAdd);
+    getline(cin >> ws, homeAdd);
     cout<<"enter phone number: ";
-    getline(cin, phoneNum);
+    getline(cin >> ws, phoneNum);
 
 
     cout<<"Assign this Instructor to which class?"<<endl;

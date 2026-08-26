@@ -13,7 +13,9 @@ void DatabaseManager::regParent(){
     cout<<"=====REGISTERING AS A PARENT====="<<endl;
     
     //create account
-    createAcc(2);
+    if(!createAcc(2)){
+        return;
+    };
 
     cin.ignore();
     cout<<"Enter full name: ";

@@ -163,6 +163,14 @@ bool DatabaseManager::createAcc(int option){
     {
         cout<<"\nEnter password: ";
         getline(cin>>ws,password);
+
+        if (password == "0")
+        {
+            cout<<YELLOW<<"[ ABORTING ] "<<RESET<<"Please wait..."<<endl;
+            PETC();
+            return false;
+        }
+        
         cout<<"Confirm password: ";
         getline(cin>>ws,cfmPwd);
 

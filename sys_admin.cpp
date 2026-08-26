@@ -86,7 +86,9 @@ void DatabaseManager::regInstructor(){
     cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
     
     //create account
-    createAcc(3);
+    if(!createAcc(3)){
+        return;
+    };
 
     cin.ignore();
     cout<<"Enter full name: ";

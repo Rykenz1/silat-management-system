@@ -6,7 +6,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ## Todo
 
-- [ ] dont show password when enter
+- [x] dont show password when enter
 
 ### Student
 - [x] Student self-register

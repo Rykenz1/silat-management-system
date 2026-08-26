@@ -46,3 +46,4 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - ~Cant read input on instructor view student function~
 - ~withdraw request skip reason input~
 - ~when password did not match on creating account, it skip to enter name~
+- need to press enter twice to proceed registering account password

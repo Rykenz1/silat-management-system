@@ -161,7 +161,7 @@ bool DatabaseManager::createAcc(int option){
     bool samePassword=false;
     while (!samePassword)
     {
-        cout<<"\nEnter password: ";
+        cout<<"\nEnter password  : ";
         getline(cin>>ws,password);
 
         if (password == "0")
@@ -175,8 +175,7 @@ bool DatabaseManager::createAcc(int option){
         getline(cin>>ws,cfmPwd);
 
         if(password==cfmPwd){
-            password = cfmPwd;
-            break;
+            samePassword=true;
         }else{
             cout<<YELLOW<<"[ TRY AGAIN ] "<<RESET<<"Password did not match"<<endl;
         }
@@ -299,6 +298,47 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
 
     return nextID;
 }
+
+bool DatabaseManager::isValidFullName(const std::string& name){
+    if (name.empty()) {
+        return false;
+    }
+
+    bool hasAlpha = false;
+
+    for (char c : name) {
+        // Allow alphabetic characters (A-Z, a-z)
+        if (isalpha(static_cast<unsigned char>(c))) {
+            hasAlpha = true;
+        } 
+        // Allow spaces, hyphens, and apostrophes (e.g., "Nur 'Ain", "Abdul-Rahman")
+        else if (c == ' ' || c == '-' || c == '\'') {
+            continue;
+        } 
+        // Reject numbers, symbols, and punctuation
+        else {
+            return false;
+        }
+    }
+
+    // Must contain at least one letter (prevents input containing only spaces/hyphens)
+    return hasAlpha;
+}   //is valid full name
+
+bool DatabaseManager::isValidIC(const std::string& ic){
+    // Must be exactly 12 characters long
+    if (ic.length() != 12) {
+        return false;
+    }
+
+    // Every character must be a numeric digit (0-9)
+    for (char c : ic) {
+        if (!isdigit(static_cast<unsigned char>(c))) {
+            return false;
+        }
+    }
+    return true;
+}   //check ic format
 
 bool DatabaseManager::getFeeStatus(string payerAccID){
     bool isPaid=false;

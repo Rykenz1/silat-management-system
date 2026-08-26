@@ -61,6 +61,8 @@ public:
 
     //function with RETURN value
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
+    bool isValidFullName(const string& name); //check if name is valid or no
+    bool isValidIC(const string& ic); //check for valid ic format
     bool getFeeStatus(string payerAccID); //get fee status
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     int calcAge(string IC); //calculate age based on IC

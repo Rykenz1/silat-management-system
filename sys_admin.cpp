@@ -483,9 +483,9 @@ void DatabaseManager::allInstructors(){
 
             cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
             cout << "│ "<< WHITE <<"[ DAY: " << left << setw(10) << (toUpperCase(currentDay) + " ]") << RESET
-                 << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << " INSTRUCTOR(S) ]"<<RESET 
-                 << left << setw(10)<<BLUE<<"[ " << studentsInDay << " STUDENT(S) ]"<<RESET 
-                 << right << setw(21) << "│" << endl;
+                 << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << "/3 INSTRUCTOR(S) ]"<<RESET 
+                 << left << setw(10)<<BLUE<<"[ " << studentsInDay << "/30 STUDENT(S) ]"<<RESET 
+                 << right << setw(16) << "│" << endl;
             cout << "├─────────────────────────────────────────────────────────────┬───────────────┤" << endl;
             cout << "│ " << left << setw(59) << "Name"
                  << " │ " << left << setw(12) << "Student Count"

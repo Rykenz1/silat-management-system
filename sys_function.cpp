@@ -478,9 +478,7 @@ void DatabaseManager::payFees(){
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
         cout << "           No further payment is required for this billing cycle." << endl;
-        cout << "\n  Press Enter to return...";
-        cin.ignore();
-        cin.get();
+        PETC();
         return;
     }
 
@@ -549,6 +547,7 @@ void DatabaseManager::donate(){
     string choice;
 
     //display page
+    clearScreen();
     cout <<GREEN<< "╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                 GELANGGANG DONATION / INFAQ                 │" << endl;
     cout << "╰─────────────────────────────────────────────────────────────╯" <<RESET<< endl;
@@ -598,7 +597,7 @@ void DatabaseManager::donate(){
     dStmt->setString(3,currentUser);
     
     dStmt->executeUpdate();
-
+    cout<<GREEN<<"[ THANK YOU ] "<<RESET<<"You have donated RM"<<amount<<"."<<endl;
     PETC();
     delete dStmt;
 } //Donate

@@ -85,8 +85,8 @@ public:
     
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
-    void studentApproval(string instructorID, string classSlot);
-    void viewStudents(string instructorID, string classDay);
+    void studentApproval(string instructorID, string slotID);
+    void viewStudents(string instructorID, string slotID);
     void promoteStudents(string instructorID);
     string getNextRank(string rankID);
     string getRankColor(string rankID);

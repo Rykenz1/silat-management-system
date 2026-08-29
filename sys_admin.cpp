@@ -513,8 +513,9 @@ void DatabaseManager::allInstructors(){
 
 void DatabaseManager::nvwReport(){
 
-    int totalNew=0;
-    int totalWithdraw=0;
+    int curYear=0;
+    int curMonth=0;
+    int selectedYear=2026;
     
     struct month{
         int year;
@@ -525,6 +526,8 @@ void DatabaseManager::nvwReport(){
 
     string nwSql = 
         "select "
+        "year(curdate()) as curYear, "
+        "month(curdate()) as curMonth, "
         "? as year, "
         "? as month, "
         "(select count(studentID) "
@@ -537,63 +540,93 @@ void DatabaseManager::nvwReport(){
         "   and wthStatus = 'approved' "
         ") as withdrawCount "
     ;
-
+    
     vector<month> monthList;
-    monthList.clear();
-    //insert data into vector
-    for(size_t i=1;i<=12;++i){
-        int thisMonth=i;
-        int thisYear=2026;
 
-        
-        PreparedStatement* nwStmt=con->prepareStatement(nwSql);
-        nwStmt->setInt(1,thisYear);
-        nwStmt->setInt(2,thisMonth);
+    do
+    {
+        int totalNew=0;
+        int totalWithdraw=0;
 
-        ResultSet* nwRes=nwStmt->executeQuery();
+        monthList.clear();
+        //insert data into vector
 
-        if(nwRes->next()){
-            month m;
+        for(size_t i=1;i<=12;++i){
+            int thisMonth=i;
+            int thisYear=selectedYear;
 
-            m.month = nwRes->getInt("month");
-            m.year = nwRes->getInt("year");
-            m.newCount = nwRes->getInt("newCount");
-            totalNew += m.newCount;
-            m.withdrawCount= nwRes->getInt("withdrawCount");
-            totalWithdraw += m.withdrawCount;
-            monthList.push_back(m);
+            
+            PreparedStatement* nwStmt=con->prepareStatement(nwSql);
+            nwStmt->setInt(1,thisYear);
+            nwStmt->setInt(2,thisMonth);
+
+            ResultSet* nwRes=nwStmt->executeQuery();
+
+            if(nwRes->next()){
+                month m;
+
+                curYear = nwRes->getInt("curYear");
+                curMonth = nwRes->getInt("curMonth");
+                m.month = nwRes->getInt("month");
+                m.year = nwRes->getInt("year");
+                m.newCount = nwRes->getInt("newCount");
+                totalNew += m.newCount;
+                m.withdrawCount= nwRes->getInt("withdrawCount");
+                totalWithdraw += m.withdrawCount;
+                monthList.push_back(m);
+            }
+
+            delete nwStmt;
+            delete nwRes;
+
         }
 
-        delete nwStmt;
-        delete nwRes;
+        int loopCount=0;
+        if(selectedYear == curYear){
+            loopCount = curMonth; //display up to current month
+        }else{
+            loopCount =12; //display all month
+        }
 
-    }
+        //rendering
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                          ANNUAL NEW STUDENT REPORT                          │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        
+        cout<<WHITE<<"\nYEAR: [ "<<selectedYear<<" ]"<<RESET<<endl;
+        cout<<"       Total New Students: "<<GREEN<<totalNew<<RESET<<endl;
+        cout<<"Total Withdrawed Students: "<<RED<<totalWithdraw<<RESET<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        
+        
+        for(int i=0;i<loopCount;++i){
+            month ml = monthList[i];
+            cout<<endl;
+            cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
+            cout<<"       New Student : ";
+            for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
+            cout<<" ["<<ml.newCount<<"]"<<endl;
 
-    //rendering
-    clearScreen();
-    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                          ANNUAL NEW STUDENT REPORT                          │" << endl;
-    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-    
-    cout<<WHITE<<"\nYEAR: [ 2026 ]"<<RESET<<endl;
-    cout<<"       Total New Students: "<<GREEN<<totalNew<<RESET<<endl;
-    cout<<"Total Withdrawed Students: "<<RED<<totalWithdraw<<RESET<<endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    
-    
-    for(int i=0;i<monthList.size();++i){
-        month ml = monthList[i];
-        cout<<endl;
-        cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
-        cout<<"       New Student : ";
-        for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
-        cout<<" ["<<ml.newCount<<"]"<<endl;
+            cout<<"Withdrawed Student : ";
+            for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
+            cout<<" ["<<ml.withdrawCount<<"]"<<endl;
+        }
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "    [1] Change Year"<<endl;
+        cout << "    [0] Exit"<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        string choice;
+        getline(cin>>ws,choice);
 
-        cout<<"Withdrawed Student : ";
-        for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
-        cout<<" ["<<ml.withdrawCount<<"]"<<endl;
-    }
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        if(choice == "0") return;
+        else if(choice == "1"){
+            cout<<"Enter year: ";
+            cin>>selectedYear;
+        } 
+    } while (true);
+    
     PETC();
     
     

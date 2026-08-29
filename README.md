@@ -8,7 +8,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 - [x] dont show password when enter
 - [ ] Allow to choose month & year on monthly summary
-- [ ] Allow to change year on anual new student
+- [x] Allow to change year on anual new student
 - [x] remove text on bar chart
 - [ ] display up to current month (year)
 - [ ] group performance by rank

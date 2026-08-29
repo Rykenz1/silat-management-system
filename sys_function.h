@@ -104,7 +104,7 @@ public:
     void performanceOverview();
     string numToMonth(int monthInt);
 
-    //41 functions daaamnnn
+    //44 functions daaamnnn
 };
 
 #endif // SYS_FUNCTION_H

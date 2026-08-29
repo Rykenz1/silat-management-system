@@ -586,20 +586,12 @@ void DatabaseManager::nvwReport(){
         cout<<endl;
         cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
         cout<<"       New Student : ";
-        if(ml.newCount== 0 ){
-            cout<<YELLOW<<"No New Student"<<RESET<<endl;
-        }else{
-            for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
-            cout<<" ["<<ml.newCount<<"]"<<endl;
-        }
+        for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
+        cout<<" ["<<ml.newCount<<"]"<<endl;
 
         cout<<"Withdrawed Student : ";
-        if(ml.withdrawCount == 0){
-            cout<<YELLOW<<"No Student Withdrawed"<<RESET<<endl;
-        }else{
-            for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
-            cout<<" ["<<ml.withdrawCount<<"]"<<endl;
-        }
+        for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
+        cout<<" ["<<ml.withdrawCount<<"]"<<endl;
     }
     cout << "\n───────────────────────────────────────────────────────────────" << endl;
     PETC();

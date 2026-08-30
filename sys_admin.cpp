@@ -183,92 +183,122 @@ void DatabaseManager::viewSummary(){
     int wdrwCount=0;
     double revenue=0;
     double donation=0;
-    string month, year;
+    int month=9, year=2026;
 
-    //get month, year
-    string getMY = "select month(curdate()), year(curdate())";
+    // //get month, year
+    // string getMY = "select month(curdate()), year(curdate())";
 
-    PreparedStatement* myStmt=con->prepareStatement(getMY);
+    // PreparedStatement* myStmt=con->prepareStatement(getMY);
 
-    ResultSet* myRes=myStmt->executeQuery();
+    // ResultSet* myRes=myStmt->executeQuery();
 
-    if (myRes->next())  
+    // if (myRes->next())  
+    // {
+    //     month=myRes->getInt(1);
+    //     year=myRes->getInt(2);
+    // }
+    
+    bool endLoop = false;
+    do
     {
-        month=numToMonth(myRes->getInt(1));
-        year=myRes->getString(2);
-    }
+         //get active instructor count
+        string getInstructor="select count(*) from account where acc_type='instructor' and approval='approved'";
+
+        PreparedStatement* iStmt=con->prepareStatement(getInstructor);
+
+        ResultSet* iRes=iStmt->executeQuery();
+
+        if(iRes->next()){
+            actvInstructor=iRes->getInt(1); //get the first column of result
+        }
+
+        delete iStmt;
+        delete iRes;
+
+        //get active student and new student count
+        string getStudent="select count(*) as totalStudent, count(case when month(joindate)= ? AND YEAR(joinDate) = ? then studentID else null end) as NewStudent from student where stdStatus='active'";
+
+        PreparedStatement* sStmt=con->prepareStatement(getStudent);
+        sStmt->setInt(1,month);
+        sStmt->setInt(2,year);
+
+        ResultSet* sRes=sStmt->executeQuery();
+
+        if(sRes->next()){
+            actvStudent=sRes->getInt("totalStudent");
+            newStudent=sRes->getInt("NewStudent");
+        }
+        delete sStmt;
+        delete sRes;
+
+        //get revenue and donation
+        string getRevenue= "SELECT SUM(amount) AS total_amount, SUM(CASE WHEN type = 'donation' THEN amount ELSE 0 END) AS total_donation FROM payment WHERE MONTH(paymentDate) = ? AND YEAR(paymentDate) = ?";
+
+        PreparedStatement* rStmt=con->prepareStatement(getRevenue);
+        rStmt->setInt(1,month);
+        rStmt->setInt(2,year);
+
+        ResultSet* rRes=rStmt->executeQuery();
+
+        if(rRes->next()){
+            revenue=rRes->getDouble("total_amount");
+            donation=rRes->getDouble("total_donation");
+        }
+        delete rStmt;
+        delete rRes;
+
+        //get withdrawal count
+        string getWdrw="select count(*) from withdraw where month(wthDate) = ? and year(wthDate) = ? and wthStatus ='approved'";
+
+        PreparedStatement* wStmt=con->prepareStatement(getWdrw);
+        wStmt->setInt(1,month);
+        wStmt->setInt(2,year);
+        
+        ResultSet* wRes=wStmt->executeQuery();
+
+        if(wRes->next()){
+            wdrwCount=wRes->getInt(1);
+        }
+
+        delete wStmt;
+        delete wRes;
+
+        clearScreen();
+
+        cout << "\n╭─────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                        MONTHLY SUMMARY                      │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────╯" << endl;
+        
+        cout << "[ "<<numToMonth(month)<<" "<<year<<" ]"<< endl;
+        cout << "  • Revenue  : "<<GREEN<<"RM"<< revenue <<RESET<< endl;
+        cout << "  • Donation : "<<GREEN<<"RM"<< donation<<RESET << endl;
+        cout << "\n  • Total Active Instructors : "<< actvInstructor <<" Instructors"<< endl;
+        cout << "  • Total Active Students    : "<< actvStudent<<" Students"<< endl;
+        cout << "  • New Student Count        : "<<GREEN<< newStudent<<" New Students"<< RESET<<endl;
+        cout << "  • Withdrawal Count         : "<<RED<< wdrwCount <<" Withdrawn"<<RESET<< endl;
+        cout<<"\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"    [1] Change date"<<endl;
+        cout<<"    [0] Exit"<<endl;
+        cout<<"\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+
+        string choice;
+        getline(cin>>ws,choice);
+
+        if(choice == "0") endLoop=true;
+        else if(choice =="1"){
+            cout<<"Enter month: ";
+            cin>>month;
+            cout<<"Enter year : ";
+            cin>>year;
+        }
+    } while (!endLoop);
     
 
-    //get active instructor count
-    string getInstructor="select count(*) from account where acc_type='instructor' and approval='approved'";
-
-    PreparedStatement* iStmt=con->prepareStatement(getInstructor);
-
-    ResultSet* iRes=iStmt->executeQuery();
-
-    if(iRes->next()){
-        actvInstructor=iRes->getInt(1); //get the first column of result
-    }
-
-    //get active student and new student count
-    string getStudent="select count(*) as totalStudent, count(case when month(joindate)= month(curdate()) then studentID else 0 end) as NewStudent from student where stdStatus='active'";
-
-    PreparedStatement* sStmt=con->prepareStatement(getStudent);
-
-    ResultSet* sRes=sStmt->executeQuery();
-
-    if(sRes->next()){
-        actvStudent=sRes->getInt("totalStudent");
-        newStudent=sRes->getInt("NewStudent");
-    }
-
-    //get revenue and donation
-    string getRevenue= "SELECT SUM(amount) AS total_amount, SUM(CASE WHEN type = 'donation' THEN amount ELSE 0 END) AS total_donation FROM payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())";
-
-    PreparedStatement* rStmt=con->prepareStatement(getRevenue);
-
-    ResultSet* rRes=rStmt->executeQuery();
-
-    if(rRes->next()){
-        revenue=rRes->getDouble("total_amount");
-        donation=rRes->getDouble("total_donation");
-    }
-
-    //get withdrawal count
-    string getWdrw="select count(*) from withdraw where month(wthDate) = month(curdate()) and year(wthDate) = year(curdate()) and wthStatus ='approved'";
-
-    PreparedStatement* wStmt=con->prepareStatement(getWdrw);
-
-    ResultSet* wRes=wStmt->executeQuery();
-
-    if(wRes->next()){
-        wdrwCount=wRes->getInt(1);
-    }
-
-    clearScreen();
-
-    cout << "\n┌─────────────────────────────────────────────────────────────┐" << endl;
-    cout << "│                        MONTHLY SUMMARY                      │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
-    
-    cout << "[ "<<month<<" "<<year<<" ]"<< endl;
-    cout << "  • Revenue  : "<<GREEN<<"RM"<< revenue <<RESET<< endl;
-    cout << "  • Donation : "<<GREEN<<"RM"<< donation<<RESET << endl;
-    cout << "\n  • Total Active Instructors : "<< actvInstructor <<" Instructors"<< endl;
-    cout << "  • Total Active Students    : "<< actvStudent<<" Students"<< endl;
-    cout << "  • New Student Count        : "<<GREEN<< newStudent<<" New Students"<< RESET<<endl;
-    cout << "  • Withdrawal Count         : "<<RED<< wdrwCount <<" Withdrawn"<<RESET<< endl;
+   
 
     PETC();
 
-    delete iStmt;
-    delete rStmt;
-    delete sStmt;
-    delete wStmt;
-    delete iRes;
-    delete rRes;
-    delete sRes;
-    delete wRes;
 }   //view summary
 
 void DatabaseManager::allStudents() {

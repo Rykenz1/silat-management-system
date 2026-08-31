@@ -11,7 +11,7 @@ A university workshop project to manage silat (martial arts) instructors and stu
 - [x] Allow to change year on anual new student
 - [x] remove text on bar chart
 - [x] display up to current month (year)
-- [ ] group performance by rank
+- [x] group performance by rank
 
 ### Student
 - [x] Student self-register

@@ -563,26 +563,21 @@ string DatabaseManager::getNextRank(string rankID){
 }   //get next rank
 
 string DatabaseManager::getRankColor(string rankID){
+    string getColor="select color from rank where rankID = ?";
+    
+    PreparedStatement* gcStmt=con->prepareStatement(getColor);
+    gcStmt->setString(1,rankID);
+    
+    ResultSet* gcRes=gcStmt->executeQuery();
+    
     string color="";
-
-    if (rankID == "r1")
-    {
-        return "white";
-    }else if(rankID == "r2"){
-        return "blue";
-    }else if(rankID == "r3"){
-        return "green";
-    }else if(rankID == "r4"){
-        return "yellow";
-    }else if(rankID == "r5"){
-        return "orange";
-    }else if(rankID == "r6"){
-        return "red";
-    }else if(rankID == "r7"){
-        return "black";
+    if(gcRes->next()){
+        color=gcRes->getString("color");
     }
 
-    return "??";
+    delete gcStmt;
+    delete gcRes;
+    return color;
     
 }   //get rank color
 

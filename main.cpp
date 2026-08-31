@@ -50,6 +50,10 @@ int main()
                 dbm.registration();
                 break;
             
+            case '3':
+                dbm.performanceOverview();
+                break;
+            
             case '0':
                 cout<<"Adios amigos :)"<<endl;
                 running=false;

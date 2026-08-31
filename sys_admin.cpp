@@ -732,106 +732,136 @@ void DatabaseManager::viewWithdrawals() { //made with gemini
     PETC();
 }
 
-void DatabaseManager::performanceOverview() { //made with gemini
-    struct StudentPerformance {
-        string studentID;
+void DatabaseManager::performanceOverview() {
+    //get student name, rank1 date achieve, rank2 date achieve, daysTaken
+    string getPerfSql=
+    "select "
+    "s.fullName, "
+    "rh1.rankID as rank1, "
+    "rh2.rankID as rank2, "
+    "rh1.date_achieved as startDate, "
+    "rh2.date_achieved as endDate, "
+    "datediff(rh2.date_achieved, rh1.date_achieved) as daysTaken "
+    "from student s "
+    "join rank_history rh1 on rh1.studentID= s.studentID "
+    "and rh1.rankID=? "
+    "join rank_history rh2 on rh2.studentID= s.studentID "
+    "and rh2.rankID=? "
+    "order by daysTaken asc"
+    ;
+    struct student{
         string fullName;
-        string currentRank;
-        int promotions;
-        double avgVelocity; // Negative or huge sentinel if no promotions (N/A)
-        bool hasVelocity;
+        string r1; //rank1
+        string r2; //rank2
+        string startDate;
+        string endDate;
+        int daysTaken;
     };
-
-    vector<StudentPerformance> reportList;
-
-    // Fetch active students, their latest rank, promotion count, and promotion velocity
-    // Sorted by avgVelocity ASC (Fastest/Best -> Slowest), placing NULLs (0 promotions) at the bottom
-    string query = 
-        "SELECT "
-        "    s.studentID, "
-        "    s.fullName, "
-        "    COALESCE(latest_r.color, 'Putih') AS currentRank, "
-        "    COUNT(rh.rankID) - 1 AS promotionsCount, "
-        "    CASE "
-        "        WHEN COUNT(rh.rankID) > 1 THEN "
-        "            ROUND(DATEDIFF(MAX(rh.date_achieved), MIN(rh.date_achieved)) / (COUNT(rh.rankID) - 1), 1) "
-        "        ELSE NULL "
-        "    END AS avgVelocityDays "
-        "FROM student s "
-        "LEFT JOIN rank_history rh ON s.studentID = rh.studentID "
-        "LEFT JOIN rank_history latest_rh ON s.studentID = latest_rh.studentID "
-        "    AND latest_rh.date_achieved = ( "
-        "        SELECT MAX(rh2.date_achieved) "
-        "        FROM rank_history rh2 "
-        "        WHERE rh2.studentID = s.studentID "
-        "    ) "
-        "LEFT JOIN rank latest_r ON latest_rh.rankID = latest_r.rankID "
-        "WHERE s.stdStatus = 'active' "
-        "GROUP BY s.studentID, s.fullName, latest_r.color "
-        "ORDER BY "
-        "    (COUNT(rh.rankID) > 1) DESC, "
-        "    avgVelocityDays ASC, "
-        "    promotionsCount DESC;";
-
     
-    PreparedStatement* pstmt=con->prepareStatement(query);
-    ResultSet* res=pstmt->executeQuery();
+    string rank1="r1";
+    string rank2="r2";
 
-    while (res->next()) {
-        StudentPerformance sp;
-        sp.studentID   = res->getString("studentID");
-        sp.fullName    = res->getString("fullName");
-        sp.currentRank = res->getString("currentRank");
-        sp.promotions  = res->getInt("promotionsCount");
+    while(true){
 
-        if (res->isNull("avgVelocityDays")) {
-            sp.hasVelocity  = false;
-            sp.avgVelocity  = 0.0;
-        } else {
-            sp.hasVelocity  = true;
-            sp.avgVelocity  = res->getDouble("avgVelocityDays");
-        }
-        reportList.push_back(sp);
-    }
+        PreparedStatement* gpStmt=con->prepareStatement(getPerfSql);
+        gpStmt->setString(1,rank1);
+        gpStmt->setString(2,rank2);
+
+        ResultSet* gpRes=gpStmt->executeQuery();
+
+        //store in vector
     
+        vector<student> studentList;
+        studentList.clear();
+        int avgDay=0;
+        while(gpRes->next()){
+            student s;
 
-    // Render Table View
-    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                               STUDENT PERFORMANCE OVERVIEW                             │" << endl;
-    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
-    cout << "  • Metric    : Promotion Velocity (Average Days per Belt Promotion)" << endl;
-    cout << "  • Formula   : (Date_latest_rank - Date_first_rank) / Total Promotion Achieved (N)" << endl;
-    cout << "  • Sorted by : Best Performance (Shortest / Fastest → Longest / Slowest)" << endl;
+            s.fullName=gpRes->getString("fullName");
+            s.r1=gpRes->getString("rank1");
+            s.r2=gpRes->getString("rank2");
+            s.startDate=gpRes->getString("startDate");
+            s.endDate=gpRes->getString("endDate");
+            s.daysTaken=gpRes->getInt("daysTaken");
+            avgDay+=s.daysTaken;
 
-    if (reportList.empty()) {
-        cout << "  No active student data found.\n" << endl;
-        return;
-    }
+            studentList.push_back(s);
+        }
+        
 
-    cout << "\n╭───────┬─────────────────────────────────────┬──────────────┬────────────┬──────────────╮" << endl;
-    cout << "│ " << left << setw(5) << "ID" 
-         << " │ " << setw(35) << "STUDENT NAME" 
-         << " │ " << setw(12) << "CURRENT RANK" 
-         << " │ " << right << setw(10) << "PROMOTIONS" 
-         << " │ " << setw(12) << "AVG VELOCITY" << " │" << endl;
-    cout << "├───────┼─────────────────────────────────────┼──────────────┼────────────┼──────────────┤" << endl;
+        delete gpStmt;
+        delete gpRes;
 
-    for (int i =0; i<reportList.size(); ++i) {
-        StudentPerformance sp = reportList[i];
-        cout << "│ " << left  << setw(5)  << sp.studentID 
-             << " │ " << left  << setw(35) << sp.fullName 
-             << " │ " << left  << setw(12) << sp.currentRank 
-             << " │ " << right << setw(10) << sp.promotions << " │ ";
+        if(studentList.empty()){
+            cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"No student"<<endl;
+        }else{
+            avgDay /= studentList.size();
+        }
 
-        if (sp.hasVelocity) {
-            cout << right << setw(7) << fixed << setprecision(1) << sp.avgVelocity << " days │" << endl;
-        } else {
-            cout << "     N/A     │" << endl;
+
+        //display in table (eg: white->blue)
+        clearScreen();
+        cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+        
+        cout<<"│ "<<WHITE<<left<<setw(40)<<toUpperCase("[ "+getRankColor(rank1) + " --> " +getRankColor(rank2) + " ]")<<RESET
+            <<BLUE<<left<<setw(46)<<("[ AVERAGE DAYS: "+ to_string(avgDay) +" ]")<<RESET
+            <<" │"<<endl;
+        cout << "├──────────────────────────────────────────────────┬──────────────┬──────────────┬───────┤" << endl;
+        cout<<"│ "<<left<<setw(48) <<"Name"
+            <<" │ "<<right<<setw(12)<<"Start"
+            <<" │ "<<right<<setw(12)<<"End"
+            <<" │ "<<right<<setw(5)<<"Days"
+            <<" │"<< endl;
+        cout << "├──────────────────────────────────────────────────┼──────────────┼──────────────┼───────┤" << endl;
+        
+        for(int i=0; i<studentList.size();++i){
+            student sl = studentList[i];
+
+            cout <<"│ "<<left<<setw(48)<< sl.fullName
+                 <<" │ "<<right<<setw(12)<<sl.startDate
+                 <<" │ "<<right<<setw(12)<<sl.endDate
+                 <<" │ "<<right<<setw(5)<<sl.daysTaken
+                 <<" │"<< endl;
+        }
+        cout << "╰──────────────────────────────────────────────────┴──────────────┴──────────────┴───────╯" << endl;
+
+        //allow to change viewed ranks
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"[ AVAILABLE OPTION ]"<<endl;
+        cout<<"   [1] White --> Blue"<<endl;
+        cout<<"   [2] Blue --> Green"<<endl;
+        cout<<"   [3] Green --> Yellow"<<endl;
+        cout<<"   [4] Yellow --> Orange"<<endl;
+        cout<<"   [5] Orange --> Red"<<endl;
+        cout<<"   [6] Red --> Black"<<endl;
+        cout<<"   [0] Exit"<<endl;
+        
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"Select an option [0-6]: ";
+        string choice;
+        getline(cin>>ws,choice);
+
+        if(choice=="0") return;
+        else if(choice == "1"){
+            rank1="r1";
+            rank2="r2";
+        }else if(choice == "2"){
+            rank1="r2";
+            rank2="r3";
+        }else if(choice == "3"){
+            rank1="r3";
+            rank2="r4";
+        }else if(choice == "4"){
+            rank1="r4";
+            rank2="r5";
+        }else if(choice == "5"){
+            rank1="r5";
+            rank2="r6";
+        }else if(choice == "6"){
+            rank1="r6";
+            rank2="r7";
         }
     }
-    cout << "╰───────┴─────────────────────────────────────┴──────────────┴────────────┴──────────────╯" << endl;
-
-    PETC();
     
 }   //performance overview
 

@@ -90,7 +90,7 @@ void DatabaseManager::regParent(){
 
     // Registration Loop
     for (int i = 0; i < childCount; i++) {
-        std::cout << "\n--- Register Child " << (i + 1) << " of " << childCount << " ---" << std::endl;
+        cout << "\n--- Register Child " << (i + 1) << " of " << childCount << " ---" << endl;
         regStudent(1, parentID);
     }
 

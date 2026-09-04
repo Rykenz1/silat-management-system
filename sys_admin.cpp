@@ -403,6 +403,9 @@ void DatabaseManager::allStudents() {
             cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
         }
 
+        if(st.fullName.length()>35){
+            st.fullName=st.fullName.substr(0, 32)+"...";
+        }
         // Print student row (setw(35) for Name)
         cout << "│ " << left  << setw(5)  << st.studentID 
              << " │ " << left  << setw(35) << st.fullName 

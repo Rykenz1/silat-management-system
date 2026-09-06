@@ -82,81 +82,123 @@ void DatabaseManager::regInstructor(){
     string homeAdd;
     string phoneNum;
     string classSlot;
-    char choice;
-    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
+    
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                            REGISTERING INSTRUCTOR                           │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
     
     //create account
     if(!createAcc(3)){
         return;
     };
 
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin >> ws, fName);
+    // cin.ignore();
+    bool isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter full name : ";
+        getline(cin>>ws, fName);
+
+        if(isValidFullName(fName)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid name.\n"<<endl;
+        }
+    }
+
     cout<<"enter home address: ";
     getline(cin >> ws, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin >> ws, phoneNum);
 
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter phone number (without hyphen '-'): ";
+        getline(cin>>ws, phoneNum);
+
+        if (isValidPhoneNum(phoneNum))
+        {
+            isValid=true;
+        }else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid phone number.\n"<<endl;
+        }
+            
+    }
+    struct slot{
+        string slotID;
+        string day;
+        int freeSlot=0;
+    };
+    vector<slot> slotList;
+    slotList.clear();
+
+    //check for not full slot
+    string checkSlotSql=
+        "select "
+        "sl.slotID, "
+        "sl.classDay, "
+        "count(distinct i.instructorID) as instructorCount "
+        "from slot sl "
+        "left join instructor i on i.slotID = sl.slotID "
+        "group by classDay "
+        "having instructorCount<3 "
+        "order by sl.slotID asc"
+    ;
+    PreparedStatement* slotStmt=con->prepareStatement(checkSlotSql);
+    ResultSet* slotRes=slotStmt->executeQuery();
+
+    while (slotRes->next())
+    {
+        slot sl;
+
+        sl.slotID= slotRes->getString("slotID");
+        sl.day= slotRes->getString("classDay");
+        sl.freeSlot= 3 - slotRes->getInt("instructorCount");
+        slotList.push_back(sl);
+    }
+
+    //
+    if(slotList.empty()){
+        cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"No empty slot currently. Sorry"<<endl;
+        PETC();
+        return;
+    }
 
     cout<<"Assign this Instructor to which class?"<<endl;
-    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
-    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
-    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
-    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
-    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
-    cout<<"  [6] Saturday (9am - 11am)"<<endl;
-    cout<<"  [7] Sunday (9am - 11am)"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    cout<<"  Select an option [1-7]: ";
-    cin>>choice;
-    bool validInput=true;
+    cout<<"\nChoose class slot:"<<endl;
+    for(int i=0;i<slotList.size();++i){
+        slot sl = slotList[i];
 
+        cout <<"  ["<<i+1<<"] "
+             <<left<<setw(10)<<sl.day<<" (9pm - 11pm)"
+             <<BLUE<<" [ "<<sl.freeSlot<<" slot(s) ]"
+             <<RESET<<endl;
+    }
+    
+    bool validInput=false;
+    int selectedIndex = -1;
+    
     do
     {
-        switch (choice)
-        {
-        case '1':
-            classSlot = "s1";
-            validInput=true;
-            break;
-        
-        case '2':
-            classSlot = "s2";
-            validInput=true;
-            break;
+        string choice;
+        cout << "───────────────────────────────────────────────────────────────" << endl;
+        cout << "  Select an option [1-" << slotList.size() << "]: ";
+        getline(cin >> ws, choice);
+        try {
+            size_t pos;
+            int choiceNum = stoi(choice, &pos);
 
-        case '3':
-            classSlot = "s3";
-            validInput=true;
-            break;
-
-        case '4':
-            classSlot = "s4";
-            validInput=true;
-            break;
-
-        case '5':
-            classSlot = "s5";
-            validInput=true;
-            break;
-
-        case '6':
-            classSlot = "s6";
-            validInput=true;
-            break;
-
-        case '7':
-            classSlot = "s7";
-            validInput=true;
-            break;
-
-        default:
-            cout<<"invalid input"<<endl;
-            validInput=false;
-            break;
+            // Ensure entire string was numeric and within valid range [1, slotList.size()]
+            if (pos == choice.length() && choiceNum >= 1 && choiceNum <= slotList.size()) {
+                selectedIndex = choiceNum-1; // or choiceNum - 1 depending on whether your list is 0-indexed
+                classSlot = slotList[selectedIndex].slotID;
+                validInput = true;
+            } else {
+                cout << RED<<"[ERROR] "<<RESET<<"Invalid option. Please enter a number between 1 and " 
+                    << (slotList.size()) << "." << endl;
+            }
+        } catch (...) {
+            cout <<RED<< "[ERROR] "<<RESET<<"Please enter a valid numeric digit." << endl;
         }
-        
     } while (validInput==false);
     
     string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, slotID)"
@@ -173,6 +215,8 @@ void DatabaseManager::regInstructor(){
     pstmt->setString(6,classSlot);
 
     ResultSet* res= pstmt->executeQuery();
+    cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Instructor registered"<<endl;
+    PETC();
 
 }   //register instructor
 

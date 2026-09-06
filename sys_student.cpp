@@ -92,6 +92,7 @@ void DatabaseManager::regStudent(int option,string parentID){
     {
         cout<<"Enter home address: ";
         getline(cin>>ws, homeAdd);
+
         isValid=false;
         while (!isValid)
         {
@@ -199,9 +200,6 @@ void DatabaseManager::regStudent(int option,string parentID){
         }
     }
     
-    
-
-
 }  //register student
 
 

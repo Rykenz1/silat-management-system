@@ -450,7 +450,7 @@ string DatabaseManager::studentStatus(string status){
         return GREEN + "[ ACTIVE ]" + RESET; 
     } else if (status=="pending"){
         return YELLOW + "[ PENDING ]" + RESET;
-    } else if (status == "withdraw" || status == "inactive" || status == "rejected") {
+    } else if (status == "withdrawn" || status == "inactive" || status == "rejected") {
         return RED + "[ WITHDRAWN ]" + RESET;
     }
 

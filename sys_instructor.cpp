@@ -776,6 +776,7 @@ void DatabaseManager::studentWithrawal(string instructorID){
             delete updWthStmt;
 
             cout <<YELLOW<< "\n[ NOTICE ]"<<RESET<<" Withdrawal request rejected." << endl;
+            PETC();
         } else {
             invalidInput();
         }

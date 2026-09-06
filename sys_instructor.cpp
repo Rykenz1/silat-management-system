@@ -108,6 +108,7 @@ void DatabaseManager::studentApproval(string instructorID, string slotID){
         string studentID;
         string studentName;
         string phoneNum; 
+        int age;
     };
     
     vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
@@ -122,7 +123,7 @@ void DatabaseManager::studentApproval(string instructorID, string slotID){
     ResultSet* res=pstmt->executeQuery();
 
     //display student list in table view
-    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<endl;
+    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<setw(5)<<"Age"<<endl;
     cout<<"───────────────────────────────────────────────────────────────"<<endl;
     int pendingCount=0;
     while(res->next()){
@@ -133,10 +134,11 @@ void DatabaseManager::studentApproval(string instructorID, string slotID){
         s.studentID=res->getString("studentID");
         s.studentName=res->getString("fullName");
         s.phoneNum=res->getString("phoneNum");
+        s.age=calcAge(res->getString("ic"));
 
         pendingList.push_back(s);
 
-        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<endl;
+        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<left<<setw(5)<<s.age<<endl;
     }
 
     //check if list is empty
@@ -195,7 +197,7 @@ void DatabaseManager::studentApproval(string instructorID, string slotID){
         approvedCount++;
     }
 
-    cout << "\nSuccessfully approved " << approvedCount << " student(s)!\n";
+    cout <<GREEN<<"\n[ SUCCESS ] "<<RESET<< " Approved " << approvedCount << " student(s)!\n";
     
     delete pstmt;
     delete istmt;

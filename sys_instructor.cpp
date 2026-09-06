@@ -659,6 +659,7 @@ void DatabaseManager::studentWithrawal(string instructorID){
 
         
         //diplay in table view (studentID, name, currank, age, reason) sory by oldest date
+        clearScreen();
         cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                              PENDING WITHDRAWAL REQUESTS                               │" << endl;
         cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;

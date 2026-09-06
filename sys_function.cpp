@@ -488,7 +488,7 @@ void DatabaseManager::payFees(){
     }
     
     
-
+    clearScreen();
     cout << "\n╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                    MONTHLY FEE PAYMENT                      │" << endl;
     cout << "╰─────────────────────────────────────────────────────────────╯" << endl;

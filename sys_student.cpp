@@ -220,7 +220,7 @@ void DatabaseManager::studenDashboard(){
     while (!endLoop)
     {
         clearScreen();
-        cout<<"Current account ID: "<<currentUser<<endl;
+        // cout<<"Current account ID: "<<currentUser<<endl;
         string sqlStmt = "select st.*, sl.classDay, "
             "COALESCE(r.color, 'Pending Approval') AS color,"
             "count(w.studentID) as requestCount, "

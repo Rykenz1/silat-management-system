@@ -195,7 +195,7 @@ void DatabaseManager::parentDashboard(){
 
 void DatabaseManager::dispChildren(){
     //get children list
-    string getChildSql = "SELECT s.studentID, s.fullName, s.stdStatus, ifnull(r.color, 'No Rank') AS color FROM student s LEFT JOIN rank_history rh ON s.studentID = rh.studentID AND rh.date_achieved = ( SELECT MAX(rh2.date_achieved) FROM rank_history rh2 WHERE rh2.studentID = s.studentID ) LEFT JOIN rank r ON rh.rankID = r.rankID WHERE s.parentID = (SELECT parentID FROM parent WHERE accountID = ?)";
+    string getChildSql = "SELECT s.studentID, s.fullName, s.stdStatus, ifnull(r.color, 'No Rank') AS color FROM student s LEFT JOIN rank_history rh ON s.studentID = rh.studentID AND rh.rankID = ( SELECT rh2.rankID FROM rank_history rh2 WHERE rh2.studentID = s.studentID order by rh2.rankID desc limit 1) LEFT JOIN rank r ON rh.rankID = r.rankID WHERE s.parentID = (SELECT parentID FROM parent WHERE accountID = ?)";
 
     PreparedStatement* gcStmt=con->prepareStatement(getChildSql);
 

@@ -12,6 +12,7 @@ void DatabaseManager::instructorDashboard(){
     string phoneNum;
     string joinDate;
     string slotID;
+    int studentCount=0;
     int pendingCount=0;
     int withdrawCount=0;
     char choice;
@@ -19,17 +20,14 @@ void DatabaseManager::instructorDashboard(){
 
     while(!endLoop){
         //get instructor info
-        string sqlStatement=
+        string sqlStatement =
             "SELECT "
-            "i.*, sl.slotID, "
-            "COUNT(s.studentID) AS pendingCount, "
-            "COUNT(w.studentID) AS withdrawCount "
+            "    i.*, sl.slotID, "
+            "    (SELECT COUNT(*) FROM student s WHERE s.slotID = i.slotID AND s.stdStatus = 'active' and s.instructorID = i.instructorID) AS studentCount, "
+            "    (SELECT COUNT(*) FROM student s WHERE s.slotID = i.slotID AND s.stdStatus = 'pending') AS pendingCount, "
+            "    (SELECT COUNT(*) FROM withdraw w WHERE w.instructorID = i.instructorID AND w.wthStatus = 'pending') AS withdrawCount "
             "FROM instructor i "
-            "LEFT JOIN student s ON i.slotID = s.slotID "
-            "   AND s.stdStatus = 'pending' "
-            "join slot sl on sl.slotID = i.slotID "
-            "left join withdraw w on w.instructorID = i.instructorID "
-            "   AND w.wthStatus = 'pending' "
+            "JOIN slot sl ON sl.slotID = i.slotID "
             "WHERE i.accountID = ?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
@@ -49,6 +47,7 @@ void DatabaseManager::instructorDashboard(){
             slotID = res->getString("slotID");
             pendingCount = stoi(res->getString("pendingCount"));
             withdrawCount = stoi(res->getString("withdrawCount"));
+            studentCount = stoi(res->getString("studentCount"));
         }
 
         //rendering
@@ -78,7 +77,15 @@ void DatabaseManager::instructorDashboard(){
         
         case '1':
             //approval
-            studentApproval(instructorID, slotID);
+            //if student count < 10, can acces this function
+            if(studentCount<10){
+                studentApproval(instructorID, slotID);
+            }else{
+                clearScreen();
+                cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"Your student slot is full!"<<endl;
+                PETC();
+            }
+            
             break;
         
         

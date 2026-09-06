@@ -515,6 +515,7 @@ void DatabaseManager::allInstructors(){
         "count(s.instructorID) as studentCount "
         "from instructor i "
         "left join student s on i.instructorID = s.instructorID "
+        "   and s.stdStatus='active' "
         "left join slot sl on sl.slotID = i.slotID "
         "group by i.fullName "
         "order by sl.slotID asc, studentCount desc "
@@ -593,8 +594,8 @@ void DatabaseManager::allInstructors(){
             cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
             cout << "│ "<< WHITE <<"[ DAY: " << left << setw(10) << (toUpperCase(currentDay) + " ]") << RESET
                  << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << "/3 INSTRUCTOR(S) ]"<<RESET 
-                 << left << setw(10)<<BLUE<<"[ " << studentsInDay << "/30 STUDENT(S) ]"<<RESET 
-                 << right << setw(16) << "│" << endl;
+                 << left << setw(10)<<BLUE<<setw(20)<<("[ " + to_string(studentsInDay) + "/30 STUDENT(S) ]")<<RESET 
+                 << right << setw(15) << "│" << endl;
             cout << "├─────────────────────────────────────────────────────────────┬───────────────┤" << endl;
             cout << "│ " << left << setw(59) << "Name"
                  << " │ " << left << setw(12) << "Student Count"

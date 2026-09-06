@@ -56,7 +56,9 @@ void DatabaseManager::instructorDashboard(){
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                             INSTRUCTOR DASHBOARD                            │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-        cout << "\nHi, "<<fName << endl;
+        cout << "\n[ INSTRUCTOR PROFILE ]" << endl;
+        cout << "  • Name       : "<<fName << endl;
+        cout << "  • Class Slot : "<<getSlotDay(slotID) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ AVAILABLE ACTIONS ]" << endl;
         cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;

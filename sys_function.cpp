@@ -35,6 +35,9 @@ void DatabaseManager::login() {
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "Enter username: ";
         getline(cin >> ws, username);
+
+        if(username=="0") return;
+        
         password = getHiddenPassword("Enter Password: ");
 
         getCurUsr(username,password);

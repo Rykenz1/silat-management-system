@@ -246,9 +246,11 @@ void DatabaseManager::viewSummary(){
     do
     {
          //get active instructor count
-        string getInstructor="select count(*) from account where acc_type='instructor' and approval='approved'";
+        string getInstructor="select count(CASE WHEN MONTH(joinDate) <= ? AND YEAR(joinDate) <= ? THEN instructorID ELSE NULL END) from instructor";
 
         PreparedStatement* iStmt=con->prepareStatement(getInstructor);
+        iStmt->setInt(1,month);
+        iStmt->setInt(2,year);
 
         ResultSet* iRes=iStmt->executeQuery();
 
@@ -260,11 +262,13 @@ void DatabaseManager::viewSummary(){
         delete iRes;
 
         //get active student and new student count
-        string getStudent="select count(*) as totalStudent, count(case when month(joindate)= ? AND YEAR(joinDate) = ? then studentID else null end) as NewStudent from student where stdStatus='active'";
+        string getStudent="select count(CASE WHEN MONTH(joinDate) <= ? AND YEAR(joinDate) <= ? THEN studentID ELSE NULL END) as totalStudent, count(case when month(joinDate)= ? AND YEAR(joinDate) = ? then studentID else null end) as NewStudent from student where stdStatus='active'";
 
         PreparedStatement* sStmt=con->prepareStatement(getStudent);
         sStmt->setInt(1,month);
         sStmt->setInt(2,year);
+        sStmt->setInt(3,month);
+        sStmt->setInt(4,year);
 
         ResultSet* sRes=sStmt->executeQuery();
 
@@ -610,6 +614,7 @@ void DatabaseManager::nvwReport(){
         "(select count(studentID) "
         "   from student where month(joinDate) = month "
         "   and year(joinDate)=year "
+        "   and stdStatus !='pending' "
         ") as newCount, "
         "(select count(studentID) "
         "   from withdraw where month(wthDate) = month "
@@ -619,7 +624,7 @@ void DatabaseManager::nvwReport(){
     ;
     
     vector<month> monthList;
-
+    bool endLoop=false;
     do
     {
         int totalNew=0;
@@ -699,10 +704,31 @@ void DatabaseManager::nvwReport(){
 
         if(choice == "0") return;
         else if(choice == "1"){
-            cout<<"Enter year: ";
-            cin>>selectedYear;
+            bool validYear = false;
+
+            do {
+                string inputYear;
+                cout << "Enter year: ";
+                getline(cin >> ws, inputYear);
+
+                try {
+                    size_t pos;
+                    int parsedYear = stoi(inputYear, &pos);
+
+                    // Ensures the whole string is numeric and represents a realistic year
+                    if (pos == inputYear.length() && parsedYear >= 1900 && parsedYear <= 2100) {
+                        selectedYear = parsedYear;
+                        validYear = true;
+                    } else {
+                        cout <<RED<<"[ ERROR ] "<<RESET<< "Enter valid year" << endl;
+                    }
+                } catch (...) {
+                    cout <<RED<<"[ ERROR ] "<<RESET<< "Enter valid year" << endl;
+                }
+
+            } while (!validYear);
         } 
-    } while (true);
+    } while (!endLoop);
     
     PETC();
     

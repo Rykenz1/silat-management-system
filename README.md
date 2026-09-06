@@ -6,7 +6,12 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 ## Todo
 
-- [ ] dont show password when enter
+- [x] dont show password when enter
+- [x] Allow to choose month & year on monthly summary
+- [x] Allow to change year on anual new student
+- [x] remove text on bar chart
+- [x] display up to current month (year)
+- [x] group performance by rank
 
 ### Student
 - [x] Student self-register
@@ -45,3 +50,5 @@ A university workshop project to manage silat (martial arts) instructors and stu
 
 - ~Cant read input on instructor view student function~
 - ~withdraw request skip reason input~
+- ~when password did not match on creating account, it skip to enter name~
+- ~need to press enter twice to proceed registering account password~

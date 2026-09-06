@@ -82,79 +82,123 @@ void DatabaseManager::regInstructor(){
     string homeAdd;
     string phoneNum;
     string classSlot;
-    char choice;
-    cout<<"=====REGISTERING INSTRUCTOR====="<<endl;
+    
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                            REGISTERING INSTRUCTOR                           │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
     
     //create account
-    createAcc(3);
+    if(!createAcc(3)){
+        return;
+    };
 
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
+    // cin.ignore();
+    bool isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter full name : ";
+        getline(cin>>ws, fName);
+
+        if(isValidFullName(fName)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid name.\n"<<endl;
+        }
+    }
+
     cout<<"enter home address: ";
-    getline(cin, homeAdd);
-    cout<<"enter phone number: ";
-    getline(cin, phoneNum);
+    getline(cin >> ws, homeAdd);
 
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter phone number (without hyphen '-'): ";
+        getline(cin>>ws, phoneNum);
+
+        if (isValidPhoneNum(phoneNum))
+        {
+            isValid=true;
+        }else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid phone number.\n"<<endl;
+        }
+            
+    }
+    struct slot{
+        string slotID;
+        string day;
+        int freeSlot=0;
+    };
+    vector<slot> slotList;
+    slotList.clear();
+
+    //check for not full slot
+    string checkSlotSql=
+        "select "
+        "sl.slotID, "
+        "sl.classDay, "
+        "count(distinct i.instructorID) as instructorCount "
+        "from slot sl "
+        "left join instructor i on i.slotID = sl.slotID "
+        "group by classDay "
+        "having instructorCount<3 "
+        "order by sl.slotID asc"
+    ;
+    PreparedStatement* slotStmt=con->prepareStatement(checkSlotSql);
+    ResultSet* slotRes=slotStmt->executeQuery();
+
+    while (slotRes->next())
+    {
+        slot sl;
+
+        sl.slotID= slotRes->getString("slotID");
+        sl.day= slotRes->getString("classDay");
+        sl.freeSlot= 3 - slotRes->getInt("instructorCount");
+        slotList.push_back(sl);
+    }
+
+    //
+    if(slotList.empty()){
+        cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"No empty slot currently. Sorry"<<endl;
+        PETC();
+        return;
+    }
 
     cout<<"Assign this Instructor to which class?"<<endl;
-    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
-    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
-    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
-    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
-    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
-    cout<<"  [6] Saturday (9am - 11am)"<<endl;
-    cout<<"  [7] Sunday (9am - 11am)"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    cout<<"  Select an option [1-7]: ";
-    cin>>choice;
-    bool validInput=true;
+    cout<<"\nChoose class slot:"<<endl;
+    for(int i=0;i<slotList.size();++i){
+        slot sl = slotList[i];
 
+        cout <<"  ["<<i+1<<"] "
+             <<left<<setw(10)<<sl.day<<" (9pm - 11pm)"
+             <<BLUE<<" [ "<<sl.freeSlot<<" slot(s) ]"
+             <<RESET<<endl;
+    }
+    
+    bool validInput=false;
+    int selectedIndex = -1;
+    
     do
     {
-        switch (choice)
-        {
-        case '1':
-            classSlot = "s1";
-            validInput=true;
-            break;
-        
-        case '2':
-            classSlot = "s2";
-            validInput=true;
-            break;
+        string choice;
+        cout << "───────────────────────────────────────────────────────────────" << endl;
+        cout << "  Select an option [1-" << slotList.size() << "]: ";
+        getline(cin >> ws, choice);
+        try {
+            size_t pos;
+            int choiceNum = stoi(choice, &pos);
 
-        case '3':
-            classSlot = "s3";
-            validInput=true;
-            break;
-
-        case '4':
-            classSlot = "s4";
-            validInput=true;
-            break;
-
-        case '5':
-            classSlot = "s5";
-            validInput=true;
-            break;
-
-        case '6':
-            classSlot = "s6";
-            validInput=true;
-            break;
-
-        case '7':
-            classSlot = "s7";
-            validInput=true;
-            break;
-
-        default:
-            cout<<"invalid input"<<endl;
-            validInput=false;
-            break;
+            // Ensure entire string was numeric and within valid range [1, slotList.size()]
+            if (pos == choice.length() && choiceNum >= 1 && choiceNum <= slotList.size()) {
+                selectedIndex = choiceNum-1; // or choiceNum - 1 depending on whether your list is 0-indexed
+                classSlot = slotList[selectedIndex].slotID;
+                validInput = true;
+            } else {
+                cout << RED<<"[ERROR] "<<RESET<<"Invalid option. Please enter a number between 1 and " 
+                    << (slotList.size()) << "." << endl;
+            }
+        } catch (...) {
+            cout <<RED<< "[ERROR] "<<RESET<<"Please enter a valid numeric digit." << endl;
         }
-        
     } while (validInput==false);
     
     string sqlStatement = "insert into instructor(instructorID, fullName, accountID, homeAdd, phoneNum, joinDate, slotID)"
@@ -171,6 +215,8 @@ void DatabaseManager::regInstructor(){
     pstmt->setString(6,classSlot);
 
     ResultSet* res= pstmt->executeQuery();
+    cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Instructor registered"<<endl;
+    PETC();
 
 }   //register instructor
 
@@ -181,92 +227,126 @@ void DatabaseManager::viewSummary(){
     int wdrwCount=0;
     double revenue=0;
     double donation=0;
-    string month, year;
+    int month=9, year=2026;
 
-    //get month, year
-    string getMY = "select month(curdate()), year(curdate())";
+    // //get month, year
+    // string getMY = "select month(curdate()), year(curdate())";
 
-    PreparedStatement* myStmt=con->prepareStatement(getMY);
+    // PreparedStatement* myStmt=con->prepareStatement(getMY);
 
-    ResultSet* myRes=myStmt->executeQuery();
+    // ResultSet* myRes=myStmt->executeQuery();
 
-    if (myRes->next())  
+    // if (myRes->next())  
+    // {
+    //     month=myRes->getInt(1);
+    //     year=myRes->getInt(2);
+    // }
+    
+    bool endLoop = false;
+    do
     {
-        month=numToMonth(myRes->getInt(1));
-        year=myRes->getString(2);
-    }
+         //get active instructor count
+        string getInstructor="select count(CASE WHEN MONTH(joinDate) <= ? AND YEAR(joinDate) <= ? THEN instructorID ELSE NULL END) from instructor";
+
+        PreparedStatement* iStmt=con->prepareStatement(getInstructor);
+        iStmt->setInt(1,month);
+        iStmt->setInt(2,year);
+
+        ResultSet* iRes=iStmt->executeQuery();
+
+        if(iRes->next()){
+            actvInstructor=iRes->getInt(1); //get the first column of result
+        }
+
+        delete iStmt;
+        delete iRes;
+
+        //get active student and new student count
+        string getStudent="select count(CASE WHEN MONTH(joinDate) <= ? AND YEAR(joinDate) <= ? THEN studentID ELSE NULL END) as totalStudent, count(case when month(joinDate)= ? AND YEAR(joinDate) = ? then studentID else null end) as NewStudent from student where stdStatus='active'";
+
+        PreparedStatement* sStmt=con->prepareStatement(getStudent);
+        sStmt->setInt(1,month);
+        sStmt->setInt(2,year);
+        sStmt->setInt(3,month);
+        sStmt->setInt(4,year);
+
+        ResultSet* sRes=sStmt->executeQuery();
+
+        if(sRes->next()){
+            actvStudent=sRes->getInt("totalStudent");
+            newStudent=sRes->getInt("NewStudent");
+        }
+        delete sStmt;
+        delete sRes;
+
+        //get revenue and donation
+        string getRevenue= "SELECT SUM(amount) AS total_amount, SUM(CASE WHEN type = 'donation' THEN amount ELSE 0 END) AS total_donation FROM payment WHERE MONTH(paymentDate) = ? AND YEAR(paymentDate) = ?";
+
+        PreparedStatement* rStmt=con->prepareStatement(getRevenue);
+        rStmt->setInt(1,month);
+        rStmt->setInt(2,year);
+
+        ResultSet* rRes=rStmt->executeQuery();
+
+        if(rRes->next()){
+            revenue=rRes->getDouble("total_amount");
+            donation=rRes->getDouble("total_donation");
+        }
+        delete rStmt;
+        delete rRes;
+
+        //get withdrawal count
+        string getWdrw="select count(*) from withdraw where month(wthDate) = ? and year(wthDate) = ? and wthStatus ='approved'";
+
+        PreparedStatement* wStmt=con->prepareStatement(getWdrw);
+        wStmt->setInt(1,month);
+        wStmt->setInt(2,year);
+        
+        ResultSet* wRes=wStmt->executeQuery();
+
+        if(wRes->next()){
+            wdrwCount=wRes->getInt(1);
+        }
+
+        delete wStmt;
+        delete wRes;
+
+        clearScreen();
+
+        cout << "\n╭─────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                        MONTHLY SUMMARY                      │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────╯" << endl;
+        
+        cout << "[ "<<numToMonth(month)<<" "<<year<<" ]"<< endl;
+        cout << "  • Revenue  : "<<GREEN<<"RM"<< revenue <<RESET<< endl;
+        cout << "  • Donation : "<<GREEN<<"RM"<< donation<<RESET << endl;
+        cout << "\n  • Total Active Instructors : "<< actvInstructor <<" Instructors"<< endl;
+        cout << "  • Total Active Students    : "<< actvStudent<<" Students"<< endl;
+        cout << "  • New Student Count        : "<<GREEN<< newStudent<<" New Students"<< RESET<<endl;
+        cout << "  • Withdrawal Count         : "<<RED<< wdrwCount <<" Withdrawn"<<RESET<< endl;
+        cout<<"\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"    [1] Change date"<<endl;
+        cout<<"    [0] Exit"<<endl;
+        cout<<"\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+
+        string choice;
+        getline(cin>>ws,choice);
+
+        if(choice == "0") endLoop=true;
+        else if(choice =="1"){
+            cout<<"Enter month: ";
+            cin>>month;
+            cout<<"Enter year : ";
+            cin>>year;
+        }
+    } while (!endLoop);
     
 
-    //get active instructor count
-    string getInstructor="select count(*) from account where acc_type='instructor' and approval='approved'";
-
-    PreparedStatement* iStmt=con->prepareStatement(getInstructor);
-
-    ResultSet* iRes=iStmt->executeQuery();
-
-    if(iRes->next()){
-        actvInstructor=iRes->getInt(1); //get the first column of result
-    }
-
-    //get active student and new student count
-    string getStudent="select count(*) as totalStudent, count(case when month(joindate)= month(curdate()) then studentID else 0 end) as NewStudent from student where stdStatus='active'";
-
-    PreparedStatement* sStmt=con->prepareStatement(getStudent);
-
-    ResultSet* sRes=sStmt->executeQuery();
-
-    if(sRes->next()){
-        actvStudent=sRes->getInt("totalStudent");
-        newStudent=sRes->getInt("NewStudent");
-    }
-
-    //get revenue and donation
-    string getRevenue= "SELECT SUM(amount) AS total_amount, SUM(CASE WHEN type = 'donation' THEN amount ELSE 0 END) AS total_donation FROM payment WHERE MONTH(paymentDate) = MONTH(CURDATE()) AND YEAR(paymentDate) = YEAR(CURDATE())";
-
-    PreparedStatement* rStmt=con->prepareStatement(getRevenue);
-
-    ResultSet* rRes=rStmt->executeQuery();
-
-    if(rRes->next()){
-        revenue=rRes->getDouble("total_amount");
-        donation=rRes->getDouble("total_donation");
-    }
-
-    //get withdrawal count
-    string getWdrw="select count(*) from withdraw where month(wthDate) = month(curdate()) and year(wthDate) = year(curdate()) and wthStatus ='approved'";
-
-    PreparedStatement* wStmt=con->prepareStatement(getWdrw);
-
-    ResultSet* wRes=wStmt->executeQuery();
-
-    if(wRes->next()){
-        wdrwCount=wRes->getInt(1);
-    }
-
-    clearScreen();
-
-    cout << "\n┌─────────────────────────────────────────────────────────────┐" << endl;
-    cout << "│                        MONTHLY SUMMARY                      │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
-    
-    cout << "[ "<<month<<" "<<year<<" ]"<< endl;
-    cout << "  • Revenue  : "<<GREEN<<"RM"<< revenue <<RESET<< endl;
-    cout << "  • Donation : "<<GREEN<<"RM"<< donation<<RESET << endl;
-    cout << "\n  • Total Active Instructors : "<< actvInstructor <<" Instructors"<< endl;
-    cout << "  • Total Active Students    : "<< actvStudent<<" Students"<< endl;
-    cout << "  • New Student Count        : "<<GREEN<< newStudent<<" New Students"<< RESET<<endl;
-    cout << "  • Withdrawal Count         : "<<RED<< wdrwCount <<" Withdrawn"<<RESET<< endl;
+   
 
     PETC();
 
-    delete iStmt;
-    delete rStmt;
-    delete sStmt;
-    delete wStmt;
-    delete iRes;
-    delete rRes;
-    delete sRes;
-    delete wRes;
 }   //view summary
 
 void DatabaseManager::allStudents() {
@@ -303,88 +383,119 @@ void DatabaseManager::allStudents() {
         "    ) "
         "LEFT JOIN rank r ON rh.rankID = r.rankID "
         "LEFT JOIN slot sl ON s.slotID = sl.slotID "
-        "    WHERE s.stdStatus='active' "
+        "    WHERE s.stdStatus='active' and s.fullName like ? "
         "GROUP BY s.studentID, s.fullName, s.ic, sl.classDay, r.color, COALESCE(s.accountID, p.accountID)"
-        "ORDER BY r.rankID desc, s.ic asc";
+        "ORDER BY r.rankID desc, s.ic asc"
+    ;
 
-    PreparedStatement* infoStmt = con->prepareStatement(getInfoSql);
-    ResultSet* infoRes = infoStmt->executeQuery();
+    string targetName;
+    bool endLoop=false;
+    while (!endLoop)
+    {
+        
+        studentList.clear();
+        PreparedStatement* infoStmt = con->prepareStatement(getInfoSql);
+        infoStmt->setString(1,("%"+targetName+"%"));
+        ResultSet* infoRes = infoStmt->executeQuery();
 
-    while (infoRes->next()) {
-        student st;
+        while (infoRes->next()) {
+            student st;
 
-        st.studentID = infoRes->getString("studentID");
-        st.fullName  = infoRes->getString("fullName");
-        st.age       = calcAge(infoRes->getString("ic"));
-        st.classSlot = infoRes->getString("classDay");
-        st.rank      = infoRes->getString("rankColor");
-        st.feeStatus=(getFeeStatus(infoRes->getString("payer_accountID")) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET));
-        st.rankLevel = infoRes->getInt("value");
+            st.studentID = infoRes->getString("studentID");
+            st.fullName  = infoRes->getString("fullName");
+            st.age       = calcAge(infoRes->getString("ic"));
+            st.classSlot = infoRes->getString("classDay");
+            st.rank      = infoRes->getString("rankColor");
+            st.feeStatus=(getFeeStatus(infoRes->getString("payer_accountID")) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET));
+            st.rankLevel = infoRes->getInt("value");
 
-        studentList.push_back(st);
+            studentList.push_back(st);
 
-        cout << "\n" << st.fullName << endl;
-        cout << st.age << endl;
-        cout << st.rank << endl;
-        cout << st.classSlot << endl;
-        cout << st.feeStatus << endl;
-    }
-
-    // Clean up memory
-    delete infoRes;
-    delete infoStmt;
-
-    if (studentList.empty()) {
-        cout << "\n  No students registered.\n";
-        return;
-    }
-
-    // Main Header
-    clearScreen();
-
-    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                                ALL STUDENTS                                 │" << endl;
-    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-    cout << "  • Total Students : " << studentList.size() << endl;
-    cout << "  • Grouped by Rank (Highest → Lowest) | Sorted by Age (Oldest → Youngest)\n" << endl;
-
-    string currentRank = "";
-
-    for (size_t i = 0; i < studentList.size(); ++i) {
-        student st = studentList[i];
-
-        // If new rank group encountered, print group header & table headers
-        if (st.rank != currentRank) {
-            currentRank = st.rank;
-
-            // Count students in this rank group
-            int countInRank = count_if(studentList.begin(), studentList.end(), [&](const student& s) {
-                return s.rank == currentRank;
-            });
-
-            cout << "╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
-            cout << "│  [ RANK: " << left << setw(15) << (currentRank + " ]") 
-                 <<left << setw(10)<<YELLOW<<"[ " << countInRank << " STUDENT(S) ]"<<RESET 
-                 << right << setw(47) << "│" << endl;
-            cout << "├───────┬─────────────────────────────────────┬─────┬─────────────┬──────────────────────┤" << endl;
-            cout << "│ ID    │ NAME                                │ AGE │ CLASS SLOT  │ FEE STATUS           │" << endl;
-            cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
+            cout << "\n" << st.fullName << endl;
+            cout << st.age << endl;
+            cout << st.rank << endl;
+            cout << st.classSlot << endl;
+            cout << st.feeStatus << endl;
         }
 
-        // Print student row (setw(35) for Name)
-        cout << "│ " << left  << setw(5)  << st.studentID 
-             << " │ " << left  << setw(35) << st.fullName 
-             << " │ " << right << setw(3)  << st.age 
-             << " │ " << left  << setw(11) << st.classSlot 
-             << " │ " << left  << setw(32) << st.feeStatus << "│" << endl;
+        // Clean up memory
+        delete infoRes;
+        delete infoStmt;
 
-        // Close table card when rank changes or on the last entry
-        if (i == studentList.size() - 1 || studentList[i + 1].rank != currentRank) {
-            cout << "╰───────┴─────────────────────────────────────┴─────┴─────────────┴──────────────────────╯\n" << endl;
+        if (studentList.empty()) {
+            cout <<YELLOW<<"\n[ NOTICE ] "<<RESET<< "No student found."<<endl;
+            PETC();
+            targetName="";
+            continue;
+        }
+
+        // Main Header
+        clearScreen();
+
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                ALL STUDENTS                                 │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        cout << "  • Total Students : " << studentList.size() << endl;
+        cout << "  • Grouped by Rank (Highest → Lowest) | Sorted by Age (Oldest → Youngest)\n" << endl;
+
+        string currentRank = "";
+
+        for (size_t i = 0; i < studentList.size(); ++i) {
+            student st = studentList[i];
+
+            // If new rank group encountered, print group header & table headers
+            if (st.rank != currentRank) {
+                currentRank = st.rank;
+
+                // Count students in this rank group
+                int countInRank = count_if(studentList.begin(), studentList.end(), [&](const student& s) {
+                    return s.rank == currentRank;
+                });
+
+                cout << "╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+                cout << "│  [ RANK: " << left << setw(15) << (currentRank + " ]") 
+                    <<left << setw(10)<<YELLOW<<setw(17)<<("[ " + to_string(countInRank) + " STUDENT(S) ]")<<RESET 
+                    << right << setw(46) << "│" << endl;
+                cout << "├───────┬─────────────────────────────────────┬─────┬─────────────┬──────────────────────┤" << endl;
+                cout << "│ ID    │ NAME                                │ AGE │ CLASS SLOT  │ FEE STATUS           │" << endl;
+                cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
+            }
+
+            if(st.fullName.length()>35){
+                st.fullName=st.fullName.substr(0, 32) + "...";
+            }
+            // Print student row (setw(35) for Name)
+            cout << "│ " << left  << setw(5)  << st.studentID 
+                << " │ " << left  << setw(35) << st.fullName 
+                << " │ " << right << setw(3)  << st.age 
+                << " │ " << left  << setw(11) << st.classSlot 
+                << " │ " << left  << setw(32) << st.feeStatus << "│" << endl;
+
+            // Close table card when rank changes or on the last entry
+            if (i == studentList.size() - 1 || studentList[i + 1].rank != currentRank) {
+                cout << "╰───────┴─────────────────────────────────────┴─────┴─────────────┴──────────────────────╯\n" << endl;
+            }
+        }
+
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ AVAILABLE ACTIONS ]" << endl;
+        cout << "  [1] Search Student"<< endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        string choice;
+        getline(cin>>ws, choice);
+
+        if(choice=="0"){
+            return;
+        }else if(choice=="1"){
+            cout<<"\nEnter name to search: ";
+            getline(cin>>ws, targetName);
+        }else{
+            targetName="";
         }
     }
-
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+  
     PETC();
 
 }   //all students
@@ -404,6 +515,7 @@ void DatabaseManager::allInstructors(){
         "count(s.instructorID) as studentCount "
         "from instructor i "
         "left join student s on i.instructorID = s.instructorID "
+        "   and s.stdStatus='active' "
         "left join slot sl on sl.slotID = i.slotID "
         "group by i.fullName "
         "order by sl.slotID asc, studentCount desc "
@@ -481,9 +593,9 @@ void DatabaseManager::allInstructors(){
 
             cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
             cout << "│ "<< WHITE <<"[ DAY: " << left << setw(10) << (toUpperCase(currentDay) + " ]") << RESET
-                 << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << " INSTRUCTOR(S) ]"<<RESET 
-                 << left << setw(10)<<BLUE<<"[ " << studentsInDay << " STUDENT(S) ]"<<RESET 
-                 << right << setw(21) << "│" << endl;
+                 << left << setw(10)<<YELLOW<<"[ " << instructorsInDay << "/3 INSTRUCTOR(S) ]"<<RESET 
+                 << left << setw(10)<<BLUE<<setw(20)<<("[ " + to_string(studentsInDay) + "/30 STUDENT(S) ]")<<RESET 
+                 << right << setw(15) << "│" << endl;
             cout << "├─────────────────────────────────────────────────────────────┬───────────────┤" << endl;
             cout << "│ " << left << setw(59) << "Name"
                  << " │ " << left << setw(12) << "Student Count"
@@ -511,8 +623,9 @@ void DatabaseManager::allInstructors(){
 
 void DatabaseManager::nvwReport(){
 
-    int totalNew=0;
-    int totalWithdraw=0;
+    int curYear=0;
+    int curMonth=0;
+    int selectedYear=2026;
     
     struct month{
         int year;
@@ -523,11 +636,14 @@ void DatabaseManager::nvwReport(){
 
     string nwSql = 
         "select "
+        "year(curdate()) as curYear, "
+        "month(curdate()) as curMonth, "
         "? as year, "
         "? as month, "
         "(select count(studentID) "
         "   from student where month(joinDate) = month "
         "   and year(joinDate)=year "
+        "   and stdStatus !='pending' "
         ") as newCount, "
         "(select count(studentID) "
         "   from withdraw where month(wthDate) = month "
@@ -535,71 +651,114 @@ void DatabaseManager::nvwReport(){
         "   and wthStatus = 'approved' "
         ") as withdrawCount "
     ;
-
+    
     vector<month> monthList;
-    monthList.clear();
-    //insert data into vector
-    for(size_t i=1;i<=12;++i){
-        int thisMonth=i;
-        int thisYear=2026;
+    bool endLoop=false;
+    do
+    {
+        int totalNew=0;
+        int totalWithdraw=0;
 
-        
-        PreparedStatement* nwStmt=con->prepareStatement(nwSql);
-        nwStmt->setInt(1,thisYear);
-        nwStmt->setInt(2,thisMonth);
+        monthList.clear();
+        //insert data into vector
 
-        ResultSet* nwRes=nwStmt->executeQuery();
+        for(size_t i=1;i<=12;++i){
+            int thisMonth=i;
+            int thisYear=selectedYear;
 
-        if(nwRes->next()){
-            month m;
+            
+            PreparedStatement* nwStmt=con->prepareStatement(nwSql);
+            nwStmt->setInt(1,thisYear);
+            nwStmt->setInt(2,thisMonth);
 
-            m.month = nwRes->getInt("month");
-            m.year = nwRes->getInt("year");
-            m.newCount = nwRes->getInt("newCount");
-            totalNew += m.newCount;
-            m.withdrawCount= nwRes->getInt("withdrawCount");
-            totalWithdraw += m.withdrawCount;
-            monthList.push_back(m);
+            ResultSet* nwRes=nwStmt->executeQuery();
+
+            if(nwRes->next()){
+                month m;
+
+                curYear = nwRes->getInt("curYear");
+                curMonth = nwRes->getInt("curMonth");
+                m.month = nwRes->getInt("month");
+                m.year = nwRes->getInt("year");
+                m.newCount = nwRes->getInt("newCount");
+                totalNew += m.newCount;
+                m.withdrawCount= nwRes->getInt("withdrawCount");
+                totalWithdraw += m.withdrawCount;
+                monthList.push_back(m);
+            }
+
+            delete nwStmt;
+            delete nwRes;
+
         }
 
-        delete nwStmt;
-        delete nwRes;
-
-    }
-
-    //rendering
-    clearScreen();
-    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                          ANNUAL NEW STUDENT REPORT                          │" << endl;
-    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-    
-    cout<<WHITE<<"\nYEAR: [ 2026 ]"<<RESET<<endl;
-    cout<<"       Total New Students: "<<GREEN<<totalNew<<RESET<<endl;
-    cout<<"Total Withdrawed Students: "<<RED<<totalWithdraw<<RESET<<endl;
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
-    
-    
-    for(int i=0;i<monthList.size();++i){
-        month ml = monthList[i];
-        cout<<endl;
-        cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
-        cout<<"       New Student : ";
-        if(ml.newCount== 0 ){
-            cout<<YELLOW<<"No New Student"<<RESET<<endl;
+        int loopCount=0;
+        if(selectedYear == curYear){
+            loopCount = curMonth; //display up to current month
         }else{
+            loopCount =12; //display all month
+        }
+
+        //rendering
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                          ANNUAL NEW STUDENT REPORT                          │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        
+        cout<<WHITE<<"\nYEAR: [ "<<selectedYear<<" ]"<<RESET<<endl;
+        cout<<"       Total New Students: "<<GREEN<<totalNew<<RESET<<endl;
+        cout<<"Total Withdrawed Students: "<<RED<<totalWithdraw<<RESET<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        
+        
+        for(int i=0;i<loopCount;++i){
+            month ml = monthList[i];
+            cout<<endl;
+            cout<<BLUE<<"[ "<<numToMonth(ml.month)<<" ]"<<RESET<<endl;
+            cout<<"       New Student : ";
             for (int j=0;j<ml.newCount;++j) cout<<GREEN<<"█"<<RESET;
             cout<<" ["<<ml.newCount<<"]"<<endl;
-        }
 
-        cout<<"Withdrawed Student : ";
-        if(ml.withdrawCount == 0){
-            cout<<YELLOW<<"No Student Withdrawed"<<RESET<<endl;
-        }else{
+            cout<<"Withdrawed Student : ";
             for (int j=0;j<ml.withdrawCount;++j) cout<<RED<<"█"<<RESET;
             cout<<" ["<<ml.withdrawCount<<"]"<<endl;
         }
-    }
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "    [1] Change Year"<<endl;
+        cout << "    [0] Exit"<<endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        string choice;
+        getline(cin>>ws,choice);
+
+        if(choice == "0") return;
+        else if(choice == "1"){
+            bool validYear = false;
+
+            do {
+                string inputYear;
+                cout << "Enter year: ";
+                getline(cin >> ws, inputYear);
+
+                try {
+                    size_t pos;
+                    int parsedYear = stoi(inputYear, &pos);
+
+                    // Ensures the whole string is numeric and represents a realistic year
+                    if (pos == inputYear.length() && parsedYear >= 1900 && parsedYear <= 2100) {
+                        selectedYear = parsedYear;
+                        validYear = true;
+                    } else {
+                        cout <<RED<<"[ ERROR ] "<<RESET<< "Enter valid year" << endl;
+                    }
+                } catch (...) {
+                    cout <<RED<<"[ ERROR ] "<<RESET<< "Enter valid year" << endl;
+                }
+
+            } while (!validYear);
+        } 
+    } while (!endLoop);
+    
     PETC();
     
     
@@ -675,106 +834,136 @@ void DatabaseManager::viewWithdrawals() { //made with gemini
     PETC();
 }
 
-void DatabaseManager::performanceOverview() { //made with gemini
-    struct StudentPerformance {
-        string studentID;
+void DatabaseManager::performanceOverview() {
+    //get student name, rank1 date achieve, rank2 date achieve, daysTaken
+    string getPerfSql=
+    "select "
+    "s.fullName, "
+    "rh1.rankID as rank1, "
+    "rh2.rankID as rank2, "
+    "rh1.date_achieved as startDate, "
+    "rh2.date_achieved as endDate, "
+    "datediff(rh2.date_achieved, rh1.date_achieved) as daysTaken "
+    "from student s "
+    "join rank_history rh1 on rh1.studentID= s.studentID "
+    "and rh1.rankID=? "
+    "join rank_history rh2 on rh2.studentID= s.studentID "
+    "and rh2.rankID=? "
+    "order by daysTaken asc"
+    ;
+    struct student{
         string fullName;
-        string currentRank;
-        int promotions;
-        double avgVelocity; // Negative or huge sentinel if no promotions (N/A)
-        bool hasVelocity;
+        string r1; //rank1
+        string r2; //rank2
+        string startDate;
+        string endDate;
+        int daysTaken;
     };
-
-    vector<StudentPerformance> reportList;
-
-    // Fetch active students, their latest rank, promotion count, and promotion velocity
-    // Sorted by avgVelocity ASC (Fastest/Best -> Slowest), placing NULLs (0 promotions) at the bottom
-    string query = 
-        "SELECT "
-        "    s.studentID, "
-        "    s.fullName, "
-        "    COALESCE(latest_r.color, 'Putih') AS currentRank, "
-        "    COUNT(rh.rankID) - 1 AS promotionsCount, "
-        "    CASE "
-        "        WHEN COUNT(rh.rankID) > 1 THEN "
-        "            ROUND(DATEDIFF(MAX(rh.date_achieved), MIN(rh.date_achieved)) / (COUNT(rh.rankID) - 1), 1) "
-        "        ELSE NULL "
-        "    END AS avgVelocityDays "
-        "FROM student s "
-        "LEFT JOIN rank_history rh ON s.studentID = rh.studentID "
-        "LEFT JOIN rank_history latest_rh ON s.studentID = latest_rh.studentID "
-        "    AND latest_rh.date_achieved = ( "
-        "        SELECT MAX(rh2.date_achieved) "
-        "        FROM rank_history rh2 "
-        "        WHERE rh2.studentID = s.studentID "
-        "    ) "
-        "LEFT JOIN rank latest_r ON latest_rh.rankID = latest_r.rankID "
-        "WHERE s.stdStatus = 'active' "
-        "GROUP BY s.studentID, s.fullName, latest_r.color "
-        "ORDER BY "
-        "    (COUNT(rh.rankID) > 1) DESC, "
-        "    avgVelocityDays ASC, "
-        "    promotionsCount DESC;";
-
     
-    PreparedStatement* pstmt=con->prepareStatement(query);
-    ResultSet* res=pstmt->executeQuery();
+    string rank1="r1";
+    string rank2="r2";
 
-    while (res->next()) {
-        StudentPerformance sp;
-        sp.studentID   = res->getString("studentID");
-        sp.fullName    = res->getString("fullName");
-        sp.currentRank = res->getString("currentRank");
-        sp.promotions  = res->getInt("promotionsCount");
+    while(true){
 
-        if (res->isNull("avgVelocityDays")) {
-            sp.hasVelocity  = false;
-            sp.avgVelocity  = 0.0;
-        } else {
-            sp.hasVelocity  = true;
-            sp.avgVelocity  = res->getDouble("avgVelocityDays");
-        }
-        reportList.push_back(sp);
-    }
+        PreparedStatement* gpStmt=con->prepareStatement(getPerfSql);
+        gpStmt->setString(1,rank1);
+        gpStmt->setString(2,rank2);
+
+        ResultSet* gpRes=gpStmt->executeQuery();
+
+        //store in vector
     
+        vector<student> studentList;
+        studentList.clear();
+        int avgDay=0;
+        while(gpRes->next()){
+            student s;
 
-    // Render Table View
-    cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                               STUDENT PERFORMANCE OVERVIEW                             │" << endl;
-    cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
-    cout << "  • Metric    : Promotion Velocity (Average Days per Belt Promotion)" << endl;
-    cout << "  • Formula   : (Date_latest_rank - Date_first_rank) / Total Promotion Achieved (N)" << endl;
-    cout << "  • Sorted by : Best Performance (Shortest / Fastest → Longest / Slowest)" << endl;
+            s.fullName=gpRes->getString("fullName");
+            s.r1=gpRes->getString("rank1");
+            s.r2=gpRes->getString("rank2");
+            s.startDate=gpRes->getString("startDate");
+            s.endDate=gpRes->getString("endDate");
+            s.daysTaken=gpRes->getInt("daysTaken");
+            avgDay+=s.daysTaken;
 
-    if (reportList.empty()) {
-        cout << "  No active student data found.\n" << endl;
-        return;
-    }
+            studentList.push_back(s);
+        }
+        
 
-    cout << "\n╭───────┬─────────────────────────────────────┬──────────────┬────────────┬──────────────╮" << endl;
-    cout << "│ " << left << setw(5) << "ID" 
-         << " │ " << setw(35) << "STUDENT NAME" 
-         << " │ " << setw(12) << "CURRENT RANK" 
-         << " │ " << right << setw(10) << "PROMOTIONS" 
-         << " │ " << setw(12) << "AVG VELOCITY" << " │" << endl;
-    cout << "├───────┼─────────────────────────────────────┼──────────────┼────────────┼──────────────┤" << endl;
+        delete gpStmt;
+        delete gpRes;
 
-    for (int i =0; i<reportList.size(); ++i) {
-        StudentPerformance sp = reportList[i];
-        cout << "│ " << left  << setw(5)  << sp.studentID 
-             << " │ " << left  << setw(35) << sp.fullName 
-             << " │ " << left  << setw(12) << sp.currentRank 
-             << " │ " << right << setw(10) << sp.promotions << " │ ";
+        if(studentList.empty()){
+            cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"No student"<<endl;
+        }else{
+            avgDay /= studentList.size();
+        }
 
-        if (sp.hasVelocity) {
-            cout << right << setw(7) << fixed << setprecision(1) << sp.avgVelocity << " days │" << endl;
-        } else {
-            cout << "     N/A     │" << endl;
+
+        //display in table (eg: white->blue)
+        clearScreen();
+        cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+        
+        cout<<"│ "<<WHITE<<left<<setw(40)<<toUpperCase("[ "+getRankColor(rank1) + " --> " +getRankColor(rank2) + " ]")<<RESET
+            <<BLUE<<left<<setw(46)<<("[ AVERAGE DAYS: "+ to_string(avgDay) +" ]")<<RESET
+            <<" │"<<endl;
+        cout << "├──────────────────────────────────────────────────┬──────────────┬──────────────┬───────┤" << endl;
+        cout<<"│ "<<left<<setw(48) <<"Name"
+            <<" │ "<<right<<setw(12)<<"Start"
+            <<" │ "<<right<<setw(12)<<"End"
+            <<" │ "<<right<<setw(5)<<"Days"
+            <<" │"<< endl;
+        cout << "├──────────────────────────────────────────────────┼──────────────┼──────────────┼───────┤" << endl;
+        
+        for(int i=0; i<studentList.size();++i){
+            student sl = studentList[i];
+
+            cout <<"│ "<<left<<setw(48)<< sl.fullName
+                 <<" │ "<<right<<setw(12)<<sl.startDate
+                 <<" │ "<<right<<setw(12)<<sl.endDate
+                 <<" │ "<<right<<setw(5)<<sl.daysTaken
+                 <<" │"<< endl;
+        }
+        cout << "╰──────────────────────────────────────────────────┴──────────────┴──────────────┴───────╯" << endl;
+
+        //allow to change viewed ranks
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"[ AVAILABLE OPTION ]"<<endl;
+        cout<<"   [1] White --> Blue"<<endl;
+        cout<<"   [2] Blue --> Green"<<endl;
+        cout<<"   [3] Green --> Yellow"<<endl;
+        cout<<"   [4] Yellow --> Orange"<<endl;
+        cout<<"   [5] Orange --> Red"<<endl;
+        cout<<"   [6] Red --> Black"<<endl;
+        cout<<"   [0] Exit"<<endl;
+        
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout<<"Select an option [0-6]: ";
+        string choice;
+        getline(cin>>ws,choice);
+
+        if(choice=="0") return;
+        else if(choice == "1"){
+            rank1="r1";
+            rank2="r2";
+        }else if(choice == "2"){
+            rank1="r2";
+            rank2="r3";
+        }else if(choice == "3"){
+            rank1="r3";
+            rank2="r4";
+        }else if(choice == "4"){
+            rank1="r4";
+            rank2="r5";
+        }else if(choice == "5"){
+            rank1="r5";
+            rank2="r6";
+        }else if(choice == "6"){
+            rank1="r6";
+            rank2="r7";
         }
     }
-    cout << "╰───────┴─────────────────────────────────────┴──────────────┴────────────┴──────────────╯" << endl;
-
-    PETC();
     
 }   //performance overview
 

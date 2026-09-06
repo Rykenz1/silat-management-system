@@ -11,140 +11,201 @@ void DatabaseManager::regStudent(int option,string parentID){
     string homeAdd;
     string phoneNum;
     string classSlot="";
-    char choice;
+    string choice;
+    struct slot{
+        string slotID;
+        string day;
+        int freeSlot=0;
+    };
+    vector<slot> slotList;
+    slotList.clear();
     
     //only create account if self register (option 0)
     if (option == 0)
     {
-        cout<<"=====REGISTERING AS A STUDENT====="<<endl;
-        createAcc(1);
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                          REGISTERING AS A STUDENT                           │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        if(!createAcc(1)) return;
     }
     
-    cin.ignore();
-    cout<<"Enter full name: ";
-    getline(cin, fName);
-    cout<<"enter IC: ";
-    getline(cin, ic);
+    
+    //check for not full slot
+    string checkSlotSql=
+        "select "
+        "sl.slotID, "
+        "sl.classDay, "
+        "count(distinct s.studentID) as studentCount "
+        "from slot sl "
+        "left join student s on s.slotID = sl.slotID "
+        "group by classDay "
+        "having studentCount<30 "
+        "order by sl.slotID asc"
+    ;
+    PreparedStatement* slotStmt=con->prepareStatement(checkSlotSql);
+    ResultSet* slotRes=slotStmt->executeQuery();
+
+    while (slotRes->next())
+    {
+        slot sl;
+
+        sl.slotID= slotRes->getString("slotID");
+        sl.day= slotRes->getString("classDay");
+        sl.freeSlot= 30 - slotRes->getInt("studentCount");
+        slotList.push_back(sl);
+    }
+
+    //
+    if(slotList.empty()){
+        cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"No empty slot currently. Sorry"<<endl;
+        PETC();
+        return;
+    }
+
+    bool isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter full name : ";
+        getline(cin>>ws, fName);
+
+        if(isValidFullName(fName)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid name.\n"<<endl;
+        }
+    }
+    
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter IC (without hyphen '-'): ";
+        getline(cin>>ws, ic);
+
+        if(isValidIC(ic)) isValid=true;
+        else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid IC format.\n"<<endl;
+        }
+    }
+    
+    
 
     if (option==0)
     {
-        cout<<"enter home address: ";
-        getline(cin, homeAdd);
-        cout<<"enter phone number: ";
-        getline(cin, phoneNum);
+        cout<<"Enter home address: ";
+        getline(cin>>ws, homeAdd);
+
+        isValid=false;
+        while (!isValid)
+        {
+            cout<<"Enter phone number (without hyphen '-'): ";
+            getline(cin>>ws, phoneNum);
+
+            if (isValidPhoneNum(phoneNum))
+            {
+                isValid=true;
+            }else{
+                cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid phone number.\n"<<endl;
+            }
+            
+        }
     }
     
-    cout<<"choose class slot:"<<endl;
-    cout<<"  [1] Monday (9pm - 11pm)"<<endl;
-    cout<<"  [2] Tuesday (9pm - 11pm)"<<endl;
-    cout<<"  [3] Wednesday (9pm - 11pm)"<<endl;
-    cout<<"  [4] Thursday (9pm - 11pm)"<<endl;
-    cout<<"  [5] Friday (9pm - 11pm)"<<endl;
-    cout<<"  [6] Saturday (9am - 11am)"<<endl;
-    cout<<"  [7] Sunday (9am - 11am)"<<endl;
-    cout<<"───────────────────────────────────────────────────────────────"<<endl;
-    cout<<"  Select an option [1-7]: ";
-    cin>>choice;
+    cout<<"\nChoose class slot:"<<endl;
+    for(int i=0;i<slotList.size();++i){
+        slot sl = slotList[i];
 
-    bool validInput=true;
+        cout <<"  ["<<i+1<<"] "
+             <<left<<setw(10)<<sl.day<<" (9pm - 11pm)"
+             <<BLUE<<" [ "<<sl.freeSlot<<" slot(s) ]"
+             <<RESET<<endl;
+    }
 
+    bool validInput=false;
+    int selectedIndex = -1;
+    
     do
     {
-        switch (choice)
-        {
-        case '1':
-            classSlot = "s1";
-            validInput=true;
-            break;
-        
-        case '2':
-            classSlot = "s2";
-            validInput=true;
-            break;
+        cout << "───────────────────────────────────────────────────────────────" << endl;
+        cout << "  Select an option [1-" << slotList.size() << "]: ";
+        getline(cin >> ws, choice);
+        try {
+            size_t pos;
+            int choiceNum = stoi(choice, &pos);
 
-        case '3':
-            classSlot = "s3";
-            validInput=true;
-            break;
-
-        case '4':
-            classSlot = "s4";
-            validInput=true;
-            break;
-
-        case '5':
-            classSlot = "s5";
-            validInput=true;
-            break;
-
-        case '6':
-            classSlot = "s6";
-            validInput=true;
-            break;
-
-        case '7':
-            classSlot = "s7";
-            validInput=true;
-            break;
-
-        default:
-            invalidInput();
-            validInput=false;
-            break;
+            // Ensure entire string was numeric and within valid range [1, slotList.size()]
+            if (pos == choice.length() && choiceNum >= 1 && choiceNum <= slotList.size()) {
+                selectedIndex = choiceNum-1; // or choiceNum - 1 depending on whether your list is 0-indexed
+                classSlot = slotList[selectedIndex].slotID;
+                validInput = true;
+            } else {
+                cout << RED<<"[ERROR] "<<RESET<<"Invalid option. Please enter a number between 1 and " 
+                    << (slotList.size()) << "." << endl;
+            }
+        } catch (...) {
+            cout <<RED<< "[ERROR] "<<RESET<<"Please enter a valid numeric digit." << endl;
         }
-        
     } while (validInput==false);
     
     
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"\nConfirm registration? "<<GREEN<<"(y/n)"<<RESET<<": ";
+        getline(cin>>ws,choice);
+        if(choice=="y" || choice== "Y"){
+            string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, slotID,parentID)"
+            "value(?,?,?,?,?,?,CURDATE(),?,?)";
 
-    cin.ignore();
-    cout<<"confirm registration? y/n: ";
-    cin>>choice;
-    if(choice=='y' || choice== 'Y'){
-        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, slotID,parentID)"
-        "value(?,?,?,?,?,?,CURDATE(),?,?)";
-
-        PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
-        
-        userID=getNextID("student",3);
-        pstmt->setString(1,userID); //studentID
-        pstmt->setString(2,fName);  //full name
-        pstmt->setString(3,ic);     //ic
-        
-        if (option==0) //for self register student
-        {
-        
-            pstmt->setString(4,currentUser); //connect accountID
-            pstmt->setString(5,homeAdd);
-            pstmt->setString(6,phoneNum);
-            pstmt->setNull(8, DataType::VARCHAR);
-
+            PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
             
+            userID=getNextID("student",3);
+            pstmt->setString(1,userID); //studentID
+            pstmt->setString(2,fName);  //full name
+            pstmt->setString(3,ic);     //ic
+            
+            if (option==0) //for self register student
+            {
+            
+                pstmt->setString(4,currentUser); //connect accountID
+                pstmt->setString(5,homeAdd);
+                pstmt->setString(6,phoneNum);
+                pstmt->setNull(8, DataType::VARCHAR);
 
-        }else if(option==1){ //for parent under parent
-            pstmt->setNull(4, DataType::VARCHAR);
-            pstmt->setNull(5, DataType::VARCHAR);
-            pstmt->setNull(6, DataType::VARCHAR);
-            pstmt->setString(8,parentID);
+                
+
+            }else if(option==1){ //for parent under parent
+                pstmt->setNull(4, DataType::VARCHAR);
+                pstmt->setNull(5, DataType::VARCHAR);
+                pstmt->setNull(6, DataType::VARCHAR);
+                pstmt->setString(8,parentID);
+            }
+            pstmt->setString(7,classSlot);
+
+            ResultSet* res= pstmt->executeQuery();
+
+            cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Waiting for instructor approval"<<endl;
+            isValid=true;
+            PETC();
+            
+        }else if(choice== "n" || choice == "N"){
+            //delete account
+            string deleteAccSql="delete from account where accountID = ?";
+            PreparedStatement* dStmt=con->prepareStatement(deleteAccSql);
+            dStmt->setString(1,currentUser);
+            dStmt->executeUpdate();
+            cout<<YELLOW<<"[ NOTICE ] "<<"Registration cancelled"<<RESET<<endl;
+            isValid=true;
+
+        }else{
+            invalidInput();
         }
-        pstmt->setString(7,classSlot);
-
-        ResultSet* res= pstmt->executeQuery();
-
-        cout<<"registration success... waiting for instructor approval"<<endl;
-
-        
-    }else if(choice== 'n' || choice == 'N'){
-        cout<<"registration cancelled"<<endl;
-    }else{
-        invalidInput();
     }
-
-
+    
 }  //register student
 
 
 void DatabaseManager::studenDashboard(){
+
+    
     // string studentID;
     string fName;
     string classSlot;
@@ -159,19 +220,23 @@ void DatabaseManager::studenDashboard(){
     while (!endLoop)
     {
         clearScreen();
-        string sqlStmt = "select st.*, sl.classDay, r.color, count(w.studentID) as requestCount, "
-         "  w.wthStatus"
-         " from student st"
-         " join slot sl on st.slotID = sl.slotID"
-         " join rank_history rh on st.studentId = rh.studentID"
-         " left join withdraw w on w.studentID = st.studentID "
-         "      and w.wthStatus = (select wthStatus"
-         "          from withdraw where wthStatus = 'pending' "
-         "          order by withdrawID desc limit 1) "
-         " and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 "
-         "      where rh2.studentID = st.studentID) "
-         " join rank r on rh.rankID = r.rankID "
-         " where accountID=?";
+        // cout<<"Current account ID: "<<currentUser<<endl;
+        string sqlStmt = "select st.*, sl.classDay, "
+            "COALESCE(r.color, 'Pending Approval') AS color,"
+            "count(w.studentID) as requestCount, "
+            "w.wthStatus "
+            "from student st "
+            "left join slot sl on st.slotID = sl.slotID "
+            "left join rank_history rh on st.studentId = rh.studentID "
+            "left join withdraw w on w.studentID = st.studentID "
+            "     and w.wthStatus = (select wthStatus "
+            "         from withdraw where wthStatus = 'pending' "
+            "         order by withdrawID desc limit 1) "
+            "and rh.date_achieved = (select max(rh2.date_achieved) from rank_history rh2 "
+            "     where rh2.studentID = st.studentID) "
+            "left join rank r on rh.rankID = r.rankID "
+            "where accountID=? "
+            "group by st.studentID, sl.classDay, r.color, w.wthStatus ";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStmt);
 
@@ -201,6 +266,7 @@ void DatabaseManager::studenDashboard(){
 
         ResultSet* rankRes=rstmt->executeQuery();
 
+        string status = (stdStatus == "withdrawn" ? (RED + stdStatus + RESET) : (stdStatus == "pending" ? (YELLOW + stdStatus + RESET):(GREEN + stdStatus + RESET)));
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                              STUDENT DASHBOARD                              │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
@@ -208,7 +274,7 @@ void DatabaseManager::studenDashboard(){
         cout << "  • Student Name          : "<< fName << endl;
         cout << "  • Class Slot            : "<< classSlot << endl;
         cout << "  • Current Rank          : "<< curRank << endl;
-        cout << "  • Status                : "<< (stdStatus == "withdrawn" ? (RED + stdStatus + RESET) : (GREEN + stdStatus + RESET)) << endl;
+        cout << "  • Status                : "<< status << endl;
         cout << "  • Fee Status            : "<< (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
         
         //if have withdraw request
@@ -384,7 +450,7 @@ string DatabaseManager::studentStatus(string status){
         return GREEN + "[ ACTIVE ]" + RESET; 
     } else if (status=="pending"){
         return YELLOW + "[ PENDING ]" + RESET;
-    } else if (status == "withdraw" || status == "inactive" || status == "rejected") {
+    } else if (status == "withdrawn" || status == "inactive" || status == "rejected") {
         return RED + "[ WITHDRAWN ]" + RESET;
     }
 

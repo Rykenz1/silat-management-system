@@ -29,11 +29,16 @@ void DatabaseManager::login() {
 
     for (int i = 3; i > 0; i--)
     {
-        cout << "=====LOGIN PAGE=====" << endl;
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                 LOGIN PAGE                                  │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
         cout << "Enter username: ";
-        cin >> username;
-        cout << "Enter password: ";
-        cin >> password;
+        getline(cin >> ws, username);
+
+        if(username=="0") return;
+        
+        password = getHiddenPassword("Enter Password: ");
 
         getCurUsr(username,password);
 
@@ -57,56 +62,50 @@ void DatabaseManager::login() {
             instructorDashboard();
             break;
         }else{
-            cout<<"\nIncorrect username or password.."<<endl;
+            cout<<YELLOW<<"\n[ NOTICE ] "<<RESET<<"Incorrect username or password.."<<endl;
             cout<<"Try again"<<endl;
-            cout<<i-1<<" retries left"<<endl;
+            cout<<i-1<<" Retries left"<<endl;
+            PETC();
         }
     }
 }
 
 void DatabaseManager::registration(){
-    char choice;
+    string choice;
     bool running=true;
 
     while (running)
     {
-        cout<<"=====REGISTER MENU====="<<endl<<endl;
-        cout<<"Select registration caterogy:"<<endl;
+        clearScreen();
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                REGISTER MENU                                │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        cout<<"\nSelect registration caterogy:"<<endl;
         cout<<"  [1] Individual Student (self register)"<<endl;
         cout<<"  [2] Parent / Guardian (registering children <13 years old)"<<endl;
         cout<<"  [0] Back to Main Menu"<<endl;
 
-        cout<<"Select an option [0-2]: ";
-        cin>>choice;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option [0-2]: ";
+        getline(cin >>ws, choice);
 
-        switch (choice)
-        {
-        case '1':
-            cout<<"register student"<<endl;
+        if(choice == "0") return;
+        else if(choice == "1"){
             regStudent(0,"NULL");
-            break;
-            
-        
-        case '2':
-            cout<<"register parent"<<endl;
-            regParent();
-            break;
-
-        case '0':
-            running = false;
-            break;
-            
-        default:
-            invalidInput();
-            break;
+            return;
         }
+        else if(choice == "2"){
+            regParent();
+            return;
+        }
+
     }
-    
+    PETC();
     
 }      //register menu
 
 
-void DatabaseManager::createAcc(int option){
+bool DatabaseManager::createAcc(int option){
     string username;    
     string password;
     string cfmPwd;      //confirm password
@@ -130,20 +129,56 @@ void DatabaseManager::createAcc(int option){
         default:
             break;
     }
-
-    cout<<"enter username: ";
-    cin>>username;
-
-    for (int i = 0; i < 3; i++)
+    bool validUsername=false;
+    while (!validUsername)
     {
-        cout<<"enter password: ";
-        cin>>password;
-        cout<<"confirm password: ";
-        cin>>cfmPwd;
+        cout<<"Enter username (or enter '0' to abort): ";
+        getline(cin>>ws,username);
+
+        if (username == "0")
+        {
+            cout<<YELLOW<<"[ ABORTING ] "<<RESET<<"Please wait..."<<endl;
+            PETC();
+            return false;
+        }
+        
+
+        string checkUsernameSql= "select username from account where username = ?";
+
+        PreparedStatement* cStmt=con->prepareStatement(checkUsernameSql);
+        cStmt->setString(1,username);
+
+        ResultSet* cRes=cStmt->executeQuery();
+
+        if (cRes->rowsCount()==0)
+        {
+            cout<<GREEN<<"[ VALID ] "<<RESET<<"Username available!"<<endl;
+            validUsername = true;
+        }else{
+            cout<<YELLOW<<"[ WARNING ] "<<RESET<<"Username already taken!"<<endl;
+        }
+        
+    }
+    
+    
+    bool samePassword=false;
+    while (!samePassword)
+    {
+        cout<<"\nEnter password  : ";
+        getline(cin>>ws,password);
+
+        if (password == "0")
+        {
+            cout<<YELLOW<<"[ ABORTING ] "<<RESET<<"Please wait..."<<endl;
+            PETC();
+            return false;
+        }
+        
+        cout<<"Confirm password: ";
+        getline(cin>>ws,cfmPwd);
 
         if(password==cfmPwd){
-            password = cfmPwd;
-            break;
+            samePassword=true;
         }else{
             cout<<YELLOW<<"[ TRY AGAIN ] "<<RESET<<"Password did not match"<<endl;
         }
@@ -180,7 +215,7 @@ void DatabaseManager::createAcc(int option){
 
     getCurUsr(username,password);
 
-    
+    return true;
 }       //create account
 
 
@@ -205,9 +240,6 @@ void DatabaseManager::getCurUsr(string username, string password){
         // cout<<"Incorrect username or password.."<<endl;
         // cout<<"Try again"<<endl;
     }
-    
-    cout<<currentUser<<endl;
-    cout<<userRole<<endl;
     
     delete pstmt;
     delete res;
@@ -270,6 +302,72 @@ string DatabaseManager::getNextID(string tableName, int digitCount){
     return nextID;
 }
 
+bool DatabaseManager::isValidFullName(const std::string& name){
+    if (name.empty()) {
+        return false;
+    }
+
+    bool hasAlpha = false;
+
+    for (char c : name) {
+        // Allow alphabetic characters (A-Z, a-z)
+        if (isalpha(static_cast<unsigned char>(c))) {
+            hasAlpha = true;
+        } 
+        // Allow spaces, hyphens, and apostrophes (e.g., "Nur 'Ain", "Abdul-Rahman")
+        else if (c == ' ' || c == '-' || c == '\'') {
+            continue;
+        } 
+        // Reject numbers, symbols, and punctuation
+        else {
+            return false;
+        }
+    }
+
+    // Must contain at least one letter (prevents input containing only spaces/hyphens)
+    return hasAlpha;
+}   //is valid full name
+
+bool DatabaseManager::isValidIC(const std::string& ic){
+    
+    // Must be exactly 12 characters long
+    if (ic.length() != 12) {
+        return false;
+    }
+
+    // Every character must be a numeric digit (0-9)
+    for (char c : ic) {
+        if (!isdigit(static_cast<unsigned char>(c))) {
+            return false;
+        }
+    }
+
+    bool icExists = false;
+    try {
+        string findICSql = "SELECT COUNT(*) FROM student WHERE ic = ?";
+        PreparedStatement* fiStmt = con->prepareStatement(findICSql);
+        fiStmt->setString(1, ic);
+
+        ResultSet* fiRes = fiStmt->executeQuery();
+
+        if (fiRes->next() && fiRes->getInt(1) > 0) {
+            cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"Same IC found. Enter unique IC"<<endl;
+            icExists = true;
+        }
+
+        // Clean up heap pointers to prevent memory leaks
+        delete fiRes;
+        delete fiStmt;
+
+    } catch (const SQLException& e) {
+        cerr << "[DATABASE ERROR] Failed to verify IC: " << e.what() << endl;
+        return false;
+    }
+
+    // Return false if duplicate found, true if valid and unique
+    return !icExists;
+}   //check ic format
+
 bool DatabaseManager::getFeeStatus(string payerAccID){
     bool isPaid=false;
 
@@ -331,6 +429,7 @@ void DatabaseManager::payFees(){
     double totalFee=0.0;
     int childcount=0;
     string entityID;
+    int curMonth;
 
 
     if (userRole == "student")
@@ -366,7 +465,7 @@ void DatabaseManager::payFees(){
 
         // count active children under this parent
         PreparedStatement* cStmt=con->prepareStatement(
-            "select count(*) from student where parentID = ? and stdStatus = 'active'");
+            "select count(*), month(curdate()) from student where parentID = ? and stdStatus = 'active'");
         
         cStmt->setString(1, entityID);
 
@@ -374,6 +473,7 @@ void DatabaseManager::payFees(){
 
         if(cRes->next()){
             childcount=cRes->getInt(1);
+            curMonth=cRes->getInt(2);
         }
 
         if (childcount <=0){
@@ -391,16 +491,16 @@ void DatabaseManager::payFees(){
     }
     
     
-
-    cout << "┌─────────────────────────────────────────────────────────────┐" << endl;
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                    MONTHLY FEE PAYMENT                      │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────╯" << endl;
 
     //overview
     cout << "\n[ BILLING DETAILS ]"<<endl;
     cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
     cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
-    cout << "  • Billing Cycle: Current Month" << endl;
+    cout << "  • Billing Cycle: "<<numToMonth(curMonth) << endl;
     cout << "  • Payment Stat : " << (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
 
     //if already paid
@@ -408,9 +508,7 @@ void DatabaseManager::payFees(){
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "  " << GREEN << "[NOTICE]" << RESET << " Your monthly fee has already been settled." << endl;
         cout << "           No further payment is required for this billing cycle." << endl;
-        cout << "\n  Press Enter to return...";
-        cin.ignore();
-        cin.get();
+        PETC();
         return;
     }
 
@@ -479,9 +577,10 @@ void DatabaseManager::donate(){
     string choice;
 
     //display page
-    cout <<GREEN<< "┌─────────────────────────────────────────────────────────────┐" << endl;
+    clearScreen();
+    cout <<GREEN<< "╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                 GELANGGANG DONATION / INFAQ                 │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" <<RESET<< endl;
+    cout << "╰─────────────────────────────────────────────────────────────╯" <<RESET<< endl;
     
     cout << "\n  [ DONOR INFORMATION ]" << endl;
     cout << "  • Contributor  : " << userName << endl;
@@ -528,7 +627,7 @@ void DatabaseManager::donate(){
     dStmt->setString(3,currentUser);
     
     dStmt->executeUpdate();
-
+    cout<<GREEN<<"[ THANK YOU ] "<<RESET<<"You have donated RM"<<amount<<"."<<endl;
     PETC();
     delete dStmt;
 } //Donate
@@ -632,3 +731,71 @@ void DatabaseManager::testColor(string str){
         <<WHITE<<str<<" "
         <<RESET<<endl;
 }   //test color
+
+string DatabaseManager::getHiddenPassword(const string& prompt = "Password: "){
+    //made with gemini
+
+    cout << prompt << flush;
+    string password = "";
+
+    #if defined(_WIN32) || defined(_WIN64)
+        int ch;
+        while (true) {
+            ch = _getch();
+            if (ch == 13 || ch == 10 || ch == '\r' || ch == '\n') break;
+            if (ch == 8) {
+                if (!password.empty()) password.pop_back();
+            } else if (ch >= 32 && ch <= 126) {
+                password += static_cast<char>(ch);
+            }
+        }
+    #else
+        termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+        char ch;
+        while ((ch = getchar()) != '\n' && ch != '\r' && ch != EOF) {
+            if (ch == 127 || ch == 8) { // Backspace
+                if (!password.empty()) password.pop_back();
+            } else {
+                password += ch;
+            }
+        }
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    #endif
+
+    cout << "\n";
+    return password;
+}   //hide password
+
+bool DatabaseManager::isValidPhoneNum(const string& phoneNum){
+    if(phoneNum.empty()){
+        return false;
+    }
+
+    bool isValid=false;
+    int digitCount=0;
+
+    for (char c : phoneNum){
+        // reject alpabet
+        if (isalpha(static_cast<unsigned char>(c))) {
+            return false;
+        } 
+
+        //reject '-' or spaces
+        if(c=='-' || c==' '){
+            return false;
+        }
+        ++digitCount;
+        
+    }
+    //accept only 9-12 digits
+    if(digitCount >= 10 && digitCount <=12){
+        isValid=true;
+    }
+    return isValid;
+ } //is valid phone number

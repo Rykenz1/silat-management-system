@@ -11,7 +11,8 @@ void DatabaseManager::instructorDashboard(){
     string homeAdd;
     string phoneNum;
     string joinDate;
-    string classSlot;
+    string slotID;
+    int studentCount=0;
     int pendingCount=0;
     int withdrawCount=0;
     char choice;
@@ -19,17 +20,14 @@ void DatabaseManager::instructorDashboard(){
 
     while(!endLoop){
         //get instructor info
-        string sqlStatement=
+        string sqlStatement =
             "SELECT "
-            "i.*, sl.classDay, "
-            "COUNT(s.studentID) AS pendingCount, "
-            "COUNT(w.studentID) AS withdrawCount "
+            "    i.*, sl.slotID, "
+            "    (SELECT COUNT(*) FROM student s WHERE s.slotID = i.slotID AND s.stdStatus = 'active' and s.instructorID = i.instructorID) AS studentCount, "
+            "    (SELECT COUNT(*) FROM student s WHERE s.slotID = i.slotID AND s.stdStatus = 'pending') AS pendingCount, "
+            "    (SELECT COUNT(*) FROM withdraw w WHERE w.instructorID = i.instructorID AND w.wthStatus = 'pending') AS withdrawCount "
             "FROM instructor i "
-            "LEFT JOIN student s ON i.slotID = s.slotID "
-            "   AND s.stdStatus = 'pending' "
-            "join slot sl on sl.slotID = i.slotID "
-            "left join withdraw w on w.instructorID = i.instructorID "
-            "   AND w.wthStatus = 'pending' "
+            "JOIN slot sl ON sl.slotID = i.slotID "
             "WHERE i.accountID = ?";
 
         PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
@@ -46,20 +44,20 @@ void DatabaseManager::instructorDashboard(){
             homeAdd = res->getString("homeAdd");
             phoneNum = res->getString("phoneNum");
             joinDate = res->getString("joinDate");
-            classSlot = res->getString("classDay");
+            slotID = res->getString("slotID");
             pendingCount = stoi(res->getString("pendingCount"));
             withdrawCount = stoi(res->getString("withdrawCount"));
+            studentCount = stoi(res->getString("studentCount"));
         }
-
-        
-
 
         //rendering
         clearScreen();
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                             INSTRUCTOR DASHBOARD                            │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-        cout << "\nHi, "<<fName << endl;
+        cout << "\n[ INSTRUCTOR PROFILE ]" << endl;
+        cout << "  • Name       : "<<fName << endl;
+        cout << "  • Class Slot : "<<getSlotDay(slotID) << endl;
         cout << "\n───────────────────────────────────────────────────────────────" << endl;
         cout << "[ AVAILABLE ACTIONS ]" << endl;
         cout << "  [1] Pending Approval ("<<pendingCount<<")"<< endl;
@@ -79,13 +77,21 @@ void DatabaseManager::instructorDashboard(){
         
         case '1':
             //approval
-            studentApproval(instructorID, classSlot);
+            //if student count < 10, can acces this function
+            if(studentCount<10){
+                studentApproval(instructorID, slotID);
+            }else{
+                clearScreen();
+                cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"Your student slot is full!"<<endl;
+                PETC();
+            }
+            
             break;
         
         
         case '2':
             //view students
-            viewStudents(entityID, classSlot);
+            viewStudents(entityID, slotID);
             break;
         
         case '3':
@@ -97,24 +103,22 @@ void DatabaseManager::instructorDashboard(){
             break;
         }
     }
-
-    
 }   // instructor dashboard
 
 
-void DatabaseManager::studentApproval(string instructorID, string classSlot){
-    cout<<"=====STUDENT APPROVAL====="<<endl;
-
+void DatabaseManager::studentApproval(string instructorID, string slotID){
+    clearScreen();
+    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+    cout << "│                               STUDENT APPROVAL                              │" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
     struct pendingStudent
     {
         int digit;
         string studentID;
         string studentName;
         string phoneNum; 
+        int age;
     };
-    
-
-    
     
     vector<pendingStudent> pendingList; //to store studentID of to-be-approve student
     
@@ -123,12 +127,12 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
 
     PreparedStatement* pstmt=con->prepareStatement(sqlStatement);
     
-    pstmt->setString(1,classSlot);
+    pstmt->setString(1,slotID);
 
     ResultSet* res=pstmt->executeQuery();
 
     //display student list in table view
-    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<endl;
+    cout<<right<<setw(4)<<"No "<<left<<setw(30)<<"Name"<<setw(15)<<"Contact"<<setw(5)<<"Age"<<endl;
     cout<<"───────────────────────────────────────────────────────────────"<<endl;
     int pendingCount=0;
     while(res->next()){
@@ -139,16 +143,19 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
         s.studentID=res->getString("studentID");
         s.studentName=res->getString("fullName");
         s.phoneNum=res->getString("phoneNum");
+        s.age=calcAge(res->getString("ic"));
 
         pendingList.push_back(s);
 
-        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<endl;
+        cout<<right<<setw(3)<<pendingCount<<" "<<left<<setw(30)<<s.studentName<<setw(15)<<s.phoneNum<<left<<setw(5)<<s.age<<endl;
     }
 
     //check if list is empty
     if (pendingList.empty())
-    {
-        cout<<"\nNo pending student registration for the class slot: "<<classSlot<<endl;
+    {   
+        cout<<YELLOW<<"\n[ NOTICE ]"<<RESET<<"No pending student registration for the class slot: "<<getSlotDay(slotID)<<endl;
+        PETC();
+        return;
     }
 
     cout<<"───────────────────────────────────────────────────────────────" << endl;
@@ -201,7 +208,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
         approvedCount++;
     }
 
-    cout << "\nSuccessfully approved " << approvedCount << " student(s)!\n";
+    cout <<GREEN<<"\n[ SUCCESS ] "<<RESET<< " Approved " << approvedCount << " student(s)!\n";
     
     delete pstmt;
     delete istmt;
@@ -211,7 +218,7 @@ void DatabaseManager::studentApproval(string instructorID, string classSlot){
     PETC();
 }   //student Approval
 
-void DatabaseManager::viewStudents(string instructorID, string classDay){
+void DatabaseManager::viewStudents(string instructorID, string slotID){
     
     struct student {
         string studentID;
@@ -241,7 +248,7 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         "left join rank r on rh.rankID = r.rankID "
         "join slot sl on sl.slotID = s.slotID "
         "where s.instructorID = ? and s.stdStatus = 'active' "
-        "   and sl.classDay=? "
+        "   and sl.slotID=? "
         "order by r.value desc, s.ic asc"
     ;
 
@@ -253,7 +260,7 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         PreparedStatement* sStmt=con->prepareStatement(getStudentSql);
 
         sStmt->setString(1,instructorID);
-        sStmt->setString(2,classDay);
+        sStmt->setString(2,slotID);
 
         ResultSet* sRes=sStmt->executeQuery();
 
@@ -274,8 +281,6 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
                 st.contactNum=sRes->getString("contactNum");
 
                 studentList.push_back(st);
-
-                
             }
         }
 
@@ -288,7 +293,7 @@ void DatabaseManager::viewStudents(string instructorID, string classDay){
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
 
         cout<<"  • Instructor Name : "<<GREEN<<userName<<RESET<<endl;
-        cout<<"  • Class Day       : "<<GREEN<<classDay<<RESET<<endl;
+        cout<<"  • Class Day       : "<<GREEN<<getSlotDay(slotID)<<RESET<<endl;
         cout<<"  • Total Students  : "<<GREEN<<studentList.size()<<" Students"<<RESET<<endl;
 
         string tableRank="";
@@ -572,28 +577,38 @@ string DatabaseManager::getNextRank(string rankID){
 }   //get next rank
 
 string DatabaseManager::getRankColor(string rankID){
+    string getColor="select color from rank where rankID = ?";
+    
+    PreparedStatement* gcStmt=con->prepareStatement(getColor);
+    gcStmt->setString(1,rankID);
+    
+    ResultSet* gcRes=gcStmt->executeQuery();
+    
     string color="";
-
-    if (rankID == "r1")
-    {
-        return "white";
-    }else if(rankID == "r2"){
-        return "blue";
-    }else if(rankID == "r3"){
-        return "green";
-    }else if(rankID == "r4"){
-        return "yellow";
-    }else if(rankID == "r5"){
-        return "orange";
-    }else if(rankID == "r6"){
-        return "red";
-    }else if(rankID == "r7"){
-        return "black";
+    if(gcRes->next()){
+        color=gcRes->getString("color");
     }
 
-    return "??";
+    delete gcStmt;
+    delete gcRes;
+    return color;
     
 }   //get rank color
+
+string DatabaseManager::getSlotDay(string slotID){
+    string getDaySql="select classDay from slot where slotID=?";
+    string day="";
+    
+    PreparedStatement* gdStmt=con->prepareStatement(getDaySql);
+    gdStmt->setString(1,slotID);
+    
+    ResultSet* gdRes=gdStmt->executeQuery();
+
+    if(gdRes->next()){
+        day=gdRes->getString("classDay");
+    }
+    return day;
+}
 
 void DatabaseManager::studentWithrawal(string instructorID){
 
@@ -653,13 +668,14 @@ void DatabaseManager::studentWithrawal(string instructorID){
 
         
         //diplay in table view (studentID, name, currank, age, reason) sory by oldest date
+        clearScreen();
         cout << "\n╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                              PENDING WITHDRAWAL REQUESTS                               │" << endl;
         cout << "╰────────────────────────────────────────────────────────────────────────────────────────╯" << endl;
 
         //if no request, returnws
         if (requestList.empty()) {
-            cout << "\n  No pending withdrawal requests found.\n";
+            cout <<YELLOW<< "\n[ NOTICE ] "<<RESET<<"No pending withdrawal requests.";
             PETC();
             return;
         }
@@ -769,6 +785,7 @@ void DatabaseManager::studentWithrawal(string instructorID){
             delete updWthStmt;
 
             cout <<YELLOW<< "\n[ NOTICE ]"<<RESET<<" Withdrawal request rejected." << endl;
+            PETC();
         } else {
             invalidInput();
         }

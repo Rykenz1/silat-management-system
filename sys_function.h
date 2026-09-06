@@ -13,6 +13,12 @@
 #include <cppconn/prepared_statement.h>
 #include <mysql_connection.h>
 #include <mysql_driver.h>
+#if defined(_WIN32) || defined(_WIN64)
+        #include <conio.h>
+    #else
+        #include <termios.h>
+        #include <unistd.h>
+#endif
 using namespace std;
 using namespace sql;
 
@@ -43,7 +49,7 @@ public:
     // Function Declarations
     void login();
     void registration();      //register menu
-    void createAcc(int option);  //1: student, 2: parent, 3: instructor
+    bool createAcc(int option);  //1: student, 2: parent, 3: instructor
     void getCurUsr(string username, string password); //get current user
     void payFees();
     void donate();
@@ -55,10 +61,14 @@ public:
 
     //function with RETURN value
     string getNextID(string tableName,int digitCount); //find biggest account id, and increment by 1
+    bool isValidFullName(const string& name); //check if name is valid or no
+    bool isValidIC(const string& ic); //check for valid ic format
+    bool isValidPhoneNum(const string& phoneNum); //check for valid phone number format
     bool getFeeStatus(string payerAccID); //get fee status
     set<int> parseSelections(const string& input, int maxCount); //to parse input
     int calcAge(string IC); //calculate age based on IC
     string toUpperCase(string str); //convert string to uppercase
+    string getHiddenPassword(const string& prompt);
 
     //=====STUDENT FUNCTIONS=====
     void regStudent(int option, string parentID);  //0 self register, 1 under parent
@@ -76,11 +86,12 @@ public:
     
     //=====INSTURCTOR FUNCTIONS=====
     void instructorDashboard();
-    void studentApproval(string instructorID, string classSlot);
-    void viewStudents(string instructorID, string classDay);
+    void studentApproval(string instructorID, string slotID);
+    void viewStudents(string instructorID, string slotID);
     void promoteStudents(string instructorID);
     string getNextRank(string rankID);
     string getRankColor(string rankID);
+    string getSlotDay(string slotID); //take s1, return Monday
     void studentWithrawal(string instructorID);
     
     //=====ADMIN FUNCTIONS=====
@@ -94,7 +105,7 @@ public:
     void performanceOverview();
     string numToMonth(int monthInt);
 
-
+    //46 functions daaamnnn
 };
 
 #endif // SYS_FUNCTION_H

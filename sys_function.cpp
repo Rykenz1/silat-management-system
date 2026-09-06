@@ -426,6 +426,7 @@ void DatabaseManager::payFees(){
     double totalFee=0.0;
     int childcount=0;
     string entityID;
+    int curMonth;
 
 
     if (userRole == "student")
@@ -461,7 +462,7 @@ void DatabaseManager::payFees(){
 
         // count active children under this parent
         PreparedStatement* cStmt=con->prepareStatement(
-            "select count(*) from student where parentID = ? and stdStatus = 'active'");
+            "select count(*), month(curdate()) from student where parentID = ? and stdStatus = 'active'");
         
         cStmt->setString(1, entityID);
 
@@ -469,6 +470,7 @@ void DatabaseManager::payFees(){
 
         if(cRes->next()){
             childcount=cRes->getInt(1);
+            curMonth=cRes->getInt(2);
         }
 
         if (childcount <=0){
@@ -487,15 +489,15 @@ void DatabaseManager::payFees(){
     
     
 
-    cout << "┌─────────────────────────────────────────────────────────────┐" << endl;
+    cout << "\n╭─────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                    MONTHLY FEE PAYMENT                      │" << endl;
-    cout << "└─────────────────────────────────────────────────────────────┘" << endl;
+    cout << "╰─────────────────────────────────────────────────────────────╯" << endl;
 
     //overview
     cout << "\n[ BILLING DETAILS ]"<<endl;
     cout << "  • Account Type : "<< (userRole == "student" ? "Student (Personal)" : "Parent / Guardian") <<endl;
     cout << "  • " << (userRole == "student" ? "Student ID   : " : "Parent ID    : ") << entityID << endl;
-    cout << "  • Billing Cycle: Current Month" << endl;
+    cout << "  • Billing Cycle: "<<numToMonth(curMonth) << endl;
     cout << "  • Payment Stat : " << (getFeeStatus(currentUser) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET)) << endl;
 
     //if already paid

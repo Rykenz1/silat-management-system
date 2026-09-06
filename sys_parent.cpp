@@ -136,6 +136,7 @@ void DatabaseManager::parentDashboard(){
         }
 
         //display page
+        clearScreen();
         cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
         cout << "│                              PARENT DASHBOARD                               │" << endl;
         cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;

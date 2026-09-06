@@ -98,6 +98,7 @@ void DatabaseManager::instructorDashboard(){
 
 
 void DatabaseManager::studentApproval(string instructorID, string slotID){
+    clearScreen();
     cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
     cout << "│                               STUDENT APPROVAL                              │" << endl;
     cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;

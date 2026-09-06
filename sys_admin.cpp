@@ -383,91 +383,119 @@ void DatabaseManager::allStudents() {
         "    ) "
         "LEFT JOIN rank r ON rh.rankID = r.rankID "
         "LEFT JOIN slot sl ON s.slotID = sl.slotID "
-        "    WHERE s.stdStatus='active' "
+        "    WHERE s.stdStatus='active' and s.fullName like ? "
         "GROUP BY s.studentID, s.fullName, s.ic, sl.classDay, r.color, COALESCE(s.accountID, p.accountID)"
-        "ORDER BY r.rankID desc, s.ic asc";
+        "ORDER BY r.rankID desc, s.ic asc"
+    ;
 
-    PreparedStatement* infoStmt = con->prepareStatement(getInfoSql);
-    ResultSet* infoRes = infoStmt->executeQuery();
+    string targetName;
+    bool endLoop=false;
+    while (!endLoop)
+    {
+        
+        studentList.clear();
+        PreparedStatement* infoStmt = con->prepareStatement(getInfoSql);
+        infoStmt->setString(1,("%"+targetName+"%"));
+        ResultSet* infoRes = infoStmt->executeQuery();
 
-    while (infoRes->next()) {
-        student st;
+        while (infoRes->next()) {
+            student st;
 
-        st.studentID = infoRes->getString("studentID");
-        st.fullName  = infoRes->getString("fullName");
-        st.age       = calcAge(infoRes->getString("ic"));
-        st.classSlot = infoRes->getString("classDay");
-        st.rank      = infoRes->getString("rankColor");
-        st.feeStatus=(getFeeStatus(infoRes->getString("payer_accountID")) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET));
-        st.rankLevel = infoRes->getInt("value");
+            st.studentID = infoRes->getString("studentID");
+            st.fullName  = infoRes->getString("fullName");
+            st.age       = calcAge(infoRes->getString("ic"));
+            st.classSlot = infoRes->getString("classDay");
+            st.rank      = infoRes->getString("rankColor");
+            st.feeStatus=(getFeeStatus(infoRes->getString("payer_accountID")) ? (GREEN + "[ PAID ]" + RESET) : (RED + "[ UNPAID ]" + RESET));
+            st.rankLevel = infoRes->getInt("value");
 
-        studentList.push_back(st);
+            studentList.push_back(st);
 
-        cout << "\n" << st.fullName << endl;
-        cout << st.age << endl;
-        cout << st.rank << endl;
-        cout << st.classSlot << endl;
-        cout << st.feeStatus << endl;
-    }
-
-    // Clean up memory
-    delete infoRes;
-    delete infoStmt;
-
-    if (studentList.empty()) {
-        cout << "\n  No students registered.\n";
-        return;
-    }
-
-    // Main Header
-    clearScreen();
-
-    cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
-    cout << "│                                ALL STUDENTS                                 │" << endl;
-    cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
-    cout << "  • Total Students : " << studentList.size() << endl;
-    cout << "  • Grouped by Rank (Highest → Lowest) | Sorted by Age (Oldest → Youngest)\n" << endl;
-
-    string currentRank = "";
-
-    for (size_t i = 0; i < studentList.size(); ++i) {
-        student st = studentList[i];
-
-        // If new rank group encountered, print group header & table headers
-        if (st.rank != currentRank) {
-            currentRank = st.rank;
-
-            // Count students in this rank group
-            int countInRank = count_if(studentList.begin(), studentList.end(), [&](const student& s) {
-                return s.rank == currentRank;
-            });
-
-            cout << "╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
-            cout << "│  [ RANK: " << left << setw(15) << (currentRank + " ]") 
-                 <<left << setw(10)<<YELLOW<<"[ " << countInRank << " STUDENT(S) ]"<<RESET 
-                 << right << setw(47) << "│" << endl;
-            cout << "├───────┬─────────────────────────────────────┬─────┬─────────────┬──────────────────────┤" << endl;
-            cout << "│ ID    │ NAME                                │ AGE │ CLASS SLOT  │ FEE STATUS           │" << endl;
-            cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
+            cout << "\n" << st.fullName << endl;
+            cout << st.age << endl;
+            cout << st.rank << endl;
+            cout << st.classSlot << endl;
+            cout << st.feeStatus << endl;
         }
 
-        if(st.fullName.length()>35){
-            st.fullName=st.fullName.substr(0, 32)+"...";
-        }
-        // Print student row (setw(35) for Name)
-        cout << "│ " << left  << setw(5)  << st.studentID 
-             << " │ " << left  << setw(35) << st.fullName 
-             << " │ " << right << setw(3)  << st.age 
-             << " │ " << left  << setw(11) << st.classSlot 
-             << " │ " << left  << setw(32) << st.feeStatus << "│" << endl;
+        // Clean up memory
+        delete infoRes;
+        delete infoStmt;
 
-        // Close table card when rank changes or on the last entry
-        if (i == studentList.size() - 1 || studentList[i + 1].rank != currentRank) {
-            cout << "╰───────┴─────────────────────────────────────┴─────┴─────────────┴──────────────────────╯\n" << endl;
+        if (studentList.empty()) {
+            cout <<YELLOW<<"\n[ NOTICE ] "<<RESET<< "No student found."<<endl;
+            PETC();
+            targetName="";
+            continue;
+        }
+
+        // Main Header
+        clearScreen();
+
+        cout << "\n╭─────────────────────────────────────────────────────────────────────────────╮" << endl;
+        cout << "│                                ALL STUDENTS                                 │" << endl;
+        cout << "╰─────────────────────────────────────────────────────────────────────────────╯" << endl;
+        cout << "  • Total Students : " << studentList.size() << endl;
+        cout << "  • Grouped by Rank (Highest → Lowest) | Sorted by Age (Oldest → Youngest)\n" << endl;
+
+        string currentRank = "";
+
+        for (size_t i = 0; i < studentList.size(); ++i) {
+            student st = studentList[i];
+
+            // If new rank group encountered, print group header & table headers
+            if (st.rank != currentRank) {
+                currentRank = st.rank;
+
+                // Count students in this rank group
+                int countInRank = count_if(studentList.begin(), studentList.end(), [&](const student& s) {
+                    return s.rank == currentRank;
+                });
+
+                cout << "╭────────────────────────────────────────────────────────────────────────────────────────╮" << endl;
+                cout << "│  [ RANK: " << left << setw(15) << (currentRank + " ]") 
+                    <<left << setw(10)<<YELLOW<<setw(17)<<("[ " + to_string(countInRank) + " STUDENT(S) ]")<<RESET 
+                    << right << setw(46) << "│" << endl;
+                cout << "├───────┬─────────────────────────────────────┬─────┬─────────────┬──────────────────────┤" << endl;
+                cout << "│ ID    │ NAME                                │ AGE │ CLASS SLOT  │ FEE STATUS           │" << endl;
+                cout << "├───────┼─────────────────────────────────────┼─────┼─────────────┼──────────────────────┤" << endl;
+            }
+
+            if(st.fullName.length()>35){
+                st.fullName=st.fullName.substr(0, 32) + "...";
+            }
+            // Print student row (setw(35) for Name)
+            cout << "│ " << left  << setw(5)  << st.studentID 
+                << " │ " << left  << setw(35) << st.fullName 
+                << " │ " << right << setw(3)  << st.age 
+                << " │ " << left  << setw(11) << st.classSlot 
+                << " │ " << left  << setw(32) << st.feeStatus << "│" << endl;
+
+            // Close table card when rank changes or on the last entry
+            if (i == studentList.size() - 1 || studentList[i + 1].rank != currentRank) {
+                cout << "╰───────┴─────────────────────────────────────┴─────┴─────────────┴──────────────────────╯\n" << endl;
+            }
+        }
+
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "[ AVAILABLE ACTIONS ]" << endl;
+        cout << "  [1] Search Student"<< endl;
+        cout << "  [0] Exit" << endl;
+        cout << "\n───────────────────────────────────────────────────────────────" << endl;
+        cout << "   Select an option: ";
+        string choice;
+        getline(cin>>ws, choice);
+
+        if(choice=="0"){
+            return;
+        }else if(choice=="1"){
+            cout<<"\nEnter name to search: ";
+            getline(cin>>ws, targetName);
+        }else{
+            targetName="";
         }
     }
-
-    cout << "\n───────────────────────────────────────────────────────────────" << endl;
+  
     PETC();
 
 }   //all students

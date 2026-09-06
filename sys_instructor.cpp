@@ -145,6 +145,8 @@ void DatabaseManager::studentApproval(string instructorID, string slotID){
     if (pendingList.empty())
     {   
         cout<<YELLOW<<"\n[ NOTICE ]"<<RESET<<"No pending student registration for the class slot: "<<getSlotDay(slotID)<<endl;
+        PETC();
+        return;
     }
 
     cout<<"───────────────────────────────────────────────────────────────" << endl;

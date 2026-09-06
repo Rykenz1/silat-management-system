@@ -326,6 +326,7 @@ bool DatabaseManager::isValidFullName(const std::string& name){
 }   //is valid full name
 
 bool DatabaseManager::isValidIC(const std::string& ic){
+    
     // Must be exactly 12 characters long
     if (ic.length() != 12) {
         return false;
@@ -337,7 +338,31 @@ bool DatabaseManager::isValidIC(const std::string& ic){
             return false;
         }
     }
-    return true;
+
+    bool icExists = false;
+    try {
+        string findICSql = "SELECT COUNT(*) FROM student WHERE ic = ?";
+        PreparedStatement* fiStmt = con->prepareStatement(findICSql);
+        fiStmt->setString(1, ic);
+
+        ResultSet* fiRes = fiStmt->executeQuery();
+
+        if (fiRes->next() && fiRes->getInt(1) > 0) {
+            cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"Same IC found. Enter unique IC"<<endl;
+            icExists = true;
+        }
+
+        // Clean up heap pointers to prevent memory leaks
+        delete fiRes;
+        delete fiStmt;
+
+    } catch (const SQLException& e) {
+        cerr << "[DATABASE ERROR] Failed to verify IC: " << e.what() << endl;
+        return false;
+    }
+
+    // Return false if duplicate found, true if valid and unique
+    return !icExists;
 }   //check ic format
 
 bool DatabaseManager::getFeeStatus(string payerAccID){
@@ -741,3 +766,31 @@ string DatabaseManager::getHiddenPassword(const string& prompt = "Password: "){
     cout << "\n";
     return password;
 }   //hide password
+
+bool DatabaseManager::isValidPhoneNum(const string& phoneNum){
+    if(phoneNum.empty()){
+        return false;
+    }
+
+    bool isValid=false;
+    int digitCount=0;
+
+    for (char c : phoneNum){
+        // reject alpabet
+        if (isalpha(static_cast<unsigned char>(c))) {
+            return false;
+        } 
+
+        //reject '-' or spaces
+        if(c=='-' || c==' '){
+            return false;
+        }
+        ++digitCount;
+        
+    }
+    //accept only 9-12 digits
+    if(digitCount >= 10 && digitCount <=12){
+        isValid=true;
+    }
+    return isValid;
+ } //is valid phone number

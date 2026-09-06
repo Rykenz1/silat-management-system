@@ -45,8 +45,23 @@ void DatabaseManager::regParent(){
 
     cout<<"Enter home address: ";
     getline(cin>>ws, homeAdd);
-    cout<<"Enter phone number: ";
-    getline(cin>>ws, phoneNum);
+
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"Enter phone number (without hyphen '-'): ";
+        getline(cin>>ws, phoneNum);
+
+        if (isValidPhoneNum(phoneNum))
+        {
+            isValid=true;
+        }else{
+            cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid phone number.\n"<<endl;
+        }
+        
+    }
+    
+    
 
     string sqlStatement = "insert into parent(parentID, fullName,accountID, homeAdd, phoneNum)"
         "value(?,?,?,?,?)";

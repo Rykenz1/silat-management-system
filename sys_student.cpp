@@ -92,8 +92,20 @@ void DatabaseManager::regStudent(int option,string parentID){
     {
         cout<<"Enter home address: ";
         getline(cin>>ws, homeAdd);
-        cout<<"Enter phone number: ";
-        getline(cin>>ws, phoneNum);
+        isValid=false;
+        while (!isValid)
+        {
+            cout<<"Enter phone number (without hyphen '-'): ";
+            getline(cin>>ws, phoneNum);
+
+            if (isValidPhoneNum(phoneNum))
+            {
+                isValid=true;
+            }else{
+                cout<<RED<<"[ ERROR ] "<<RESET<<"Please enter valid phone number.\n"<<endl;
+            }
+            
+        }
     }
     
     cout<<"\nChoose class slot:"<<endl;
@@ -118,9 +130,9 @@ void DatabaseManager::regStudent(int option,string parentID){
             size_t pos;
             int choiceNum = stoi(choice, &pos);
 
-            // Ensure entire string was numeric and within valid range [1, slotList.size() - 1]
-            if (pos == choice.length() && choiceNum >= 1 && choiceNum <= static_cast<int>(slotList.size() - 1)) {
-                selectedIndex = choiceNum; // or choiceNum - 1 depending on whether your list is 0-indexed
+            // Ensure entire string was numeric and within valid range [1, slotList.size()]
+            if (pos == choice.length() && choiceNum >= 1 && choiceNum <= slotList.size()) {
+                selectedIndex = choiceNum-1; // or choiceNum - 1 depending on whether your list is 0-indexed
                 classSlot = slotList[selectedIndex].slotID;
                 validInput = true;
             } else {
@@ -133,53 +145,61 @@ void DatabaseManager::regStudent(int option,string parentID){
     } while (validInput==false);
     
     
+    isValid=false;
+    while (!isValid)
+    {
+        cout<<"\nConfirm registration? "<<GREEN<<"(y/n)"<<RESET<<": ";
+        getline(cin>>ws,choice);
+        if(choice=="y" || choice== "Y"){
+            string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, slotID,parentID)"
+            "value(?,?,?,?,?,?,CURDATE(),?,?)";
 
-    cout<<"\nConfirm registration? "<<GREEN<<"(y/n)"<<RESET<<": ";
-    getline(cin>>ws,choice);
-    if(choice=="y" || choice== "Y"){
-        string sqlStatement = "insert into student(studentID, fullName, ic, accountID, homeAdd, phoneNum, joinDate, slotID,parentID)"
-        "value(?,?,?,?,?,?,CURDATE(),?,?)";
-
-        PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
-        
-        userID=getNextID("student",3);
-        pstmt->setString(1,userID); //studentID
-        pstmt->setString(2,fName);  //full name
-        pstmt->setString(3,ic);     //ic
-        
-        if (option==0) //for self register student
-        {
-        
-            pstmt->setString(4,currentUser); //connect accountID
-            pstmt->setString(5,homeAdd);
-            pstmt->setString(6,phoneNum);
-            pstmt->setNull(8, DataType::VARCHAR);
-
+            PreparedStatement* pstmt= con->prepareStatement(sqlStatement);
             
+            userID=getNextID("student",3);
+            pstmt->setString(1,userID); //studentID
+            pstmt->setString(2,fName);  //full name
+            pstmt->setString(3,ic);     //ic
+            
+            if (option==0) //for self register student
+            {
+            
+                pstmt->setString(4,currentUser); //connect accountID
+                pstmt->setString(5,homeAdd);
+                pstmt->setString(6,phoneNum);
+                pstmt->setNull(8, DataType::VARCHAR);
 
-        }else if(option==1){ //for parent under parent
-            pstmt->setNull(4, DataType::VARCHAR);
-            pstmt->setNull(5, DataType::VARCHAR);
-            pstmt->setNull(6, DataType::VARCHAR);
-            pstmt->setString(8,parentID);
+                
+
+            }else if(option==1){ //for parent under parent
+                pstmt->setNull(4, DataType::VARCHAR);
+                pstmt->setNull(5, DataType::VARCHAR);
+                pstmt->setNull(6, DataType::VARCHAR);
+                pstmt->setString(8,parentID);
+            }
+            pstmt->setString(7,classSlot);
+
+            ResultSet* res= pstmt->executeQuery();
+
+            cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Waiting for instructor approval"<<endl;
+            isValid=true;
+            PETC();
+            
+        }else if(choice== "n" || choice == "N"){
+            //delete account
+            string deleteAccSql="delete from account where accountID = ?";
+            PreparedStatement* dStmt=con->prepareStatement(deleteAccSql);
+            dStmt->setString(1,currentUser);
+            dStmt->executeUpdate();
+            cout<<YELLOW<<"[ NOTICE ] "<<"Registration cancelled"<<RESET<<endl;
+            isValid=true;
+
+        }else{
+            invalidInput();
         }
-        pstmt->setString(7,classSlot);
-
-        ResultSet* res= pstmt->executeQuery();
-
-        cout<<GREEN<<"[ SUCCESS ] "<<RESET<<"Waiting for instructor approval"<<endl;
-        PETC();
-        
-    }else if(choice== "n" || choice == "N"){
-        //delete account
-        string deleteAccSql="delete from account where accountID = ?";
-        PreparedStatement* dStmt=con->prepareStatement(deleteAccSql);
-        dStmt->setString(1,currentUser);
-        dStmt->executeUpdate();
-        cout<<YELLOW<<"[ NOTICE ] "<<"Registration cancelled"<<endl;
-    }else{
-        invalidInput();
     }
+    
+    
 
 
 }  //register student

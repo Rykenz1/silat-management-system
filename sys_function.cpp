@@ -610,26 +610,60 @@ void DatabaseManager::donate(){
         amount=50.0;
     }else if (choice=="4"){
         // cin.ignore();
-        cout<<"Enter custom amount to donate:\nRM";
-        cin>>amount;
+        bool isValid = false;
+
+        do {
+            cout << "Enter custom amount to donate:\nRM ";
+            string input;
+            getline(cin >> ws, input);
+
+            try {
+                size_t pos;
+                int parsed = stoi(input, &pos);
+
+                // Ensure the entire string consists only of digits and the value is positive
+                if (pos == input.length() && parsed >= 0) {
+                    amount = parsed;
+                    isValid = true;
+                } else {
+                    cout <<RED<< "[ ERROR ]"<<RESET<<" Please enter a valid positive integer amount."<<endl;
+                }
+            } catch (...) {
+                // Catches non-numeric inputs and numbers that exceed the int limit
+                cout <<RED<< "[ ERROR ]"<<RESET<<" Invalid input. Digits only."<<endl;
+
+            }
+
+        } while (!isValid);
     }else{
         invalidInput();
+        return;
     }
 
+    cout<<"Confirm donation of RM"<<amount<<" ? (y/n): ";
+    getline(cin>>ws,choice);
 
-    string insertStmt="insert into payment(paymentID, paymentDate, amount, type, accountID)"
-     "values(?,curdate(),?,'donation',?)";
-    
-    PreparedStatement* dStmt=con->prepareStatement(insertStmt);
+    if (choice == "y" || choice == "Y"){
+        string insertStmt="insert into payment(paymentID, paymentDate, amount, type, accountID)"
+        "values(?,curdate(),?,'donation',?)";
+        
+        PreparedStatement* dStmt=con->prepareStatement(insertStmt);
 
-    dStmt->setString(1,getNextID("payment",4));
-    dStmt->setDouble(2,amount);
-    dStmt->setString(3,currentUser);
+        dStmt->setString(1,getNextID("payment",4));
+        dStmt->setDouble(2,amount);
+        dStmt->setString(3,currentUser);
+        
+        dStmt->executeUpdate();
+        cout<<GREEN<<"[ THANK YOU ] "<<RESET<<"You have donated RM"<<amount<<"."<<endl;
+        delete dStmt;
+        PETC();
+    }else if(choice == "n" || choice == "N"){
+        cout<<YELLOW<<"[ NOTICE ] "<<RESET<<"Donation cancelled."<<endl;
+
+    }
+
     
-    dStmt->executeUpdate();
-    cout<<GREEN<<"[ THANK YOU ] "<<RESET<<"You have donated RM"<<amount<<"."<<endl;
-    PETC();
-    delete dStmt;
+    
 } //Donate
 
 int DatabaseManager::calcAge(string IC){
